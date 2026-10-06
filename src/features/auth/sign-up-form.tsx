@@ -1,5 +1,7 @@
+"use client";
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PrimaryButton } from "@/components/button";
@@ -10,7 +12,7 @@ import { authApi } from "@/lib/api";
 import { signUpSchema, type SignUpValues } from "./auth.schema";
  
 export function SignUpForm() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { setEmail } = useOnboarding();
   const [serverError, setServerError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -33,7 +35,7 @@ export function SignUpForm() {
     try {
       await authApi.signUp({ email: values.email, password: values.password });
       setEmail(values.email);
-      navigate("/verify");
+      router.push("/verify");
     } catch {
       setServerError("We couldn't create your account. Please try again.");
     }
@@ -45,7 +47,7 @@ export function SignUpForm() {
     try {
       const { email } = await authApi.signUpWithGoogle();
       setEmail(email);
-      navigate("/onboarding/business-type");
+      router.push("/onboarding/business-type");
     } catch {
       setServerError("Google sign up failed. Please try again.");
     } finally {

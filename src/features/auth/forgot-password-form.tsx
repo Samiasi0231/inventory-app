@@ -1,5 +1,7 @@
+"use client";
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CenteredSubmit, FormAlert } from "@/components/auth";
@@ -9,7 +11,7 @@ import { authApi } from "@/lib/api";
 import { forgotPasswordSchema, type ForgotPasswordValues } from "./auth.schema";
  
 export function ForgotPasswordForm() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { setEmail } = useOnboarding();
   const [serverError, setServerError] = useState<string | null>(null);
  
@@ -27,7 +29,7 @@ export function ForgotPasswordForm() {
     try {
       await authApi.forgotPassword({ email });
       setEmail(email);
-      navigate("/forgot-password/verify");
+      router.push("/forgot-password/verify");
     } catch {
       setServerError("We couldn't find an account with that email.");
     }

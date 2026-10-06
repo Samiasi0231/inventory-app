@@ -1,11 +1,13 @@
-import { useNavigate } from "react-router-dom";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { AuthHeading, BackLink } from "@/components/auth";
 import { useOnboarding } from "@/context/onboarding-context";
 import { VerifyCodeForm } from "@/features/auth/verify-code-form";
 import { authApi } from "@/lib/api";
  
 export default function VerifyCodePage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { email } = useOnboarding();
  
   return (
@@ -18,7 +20,7 @@ export default function VerifyCodePage() {
       <VerifyCodeForm
         onVerify={async (code) => {
           await authApi.verifyCode({ email, code });
-          navigate("/verified");
+          router.push("/verified");
         }}
         onResend={async () => {
           await authApi.resendCode({ email });

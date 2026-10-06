@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
  
 interface BackLinkProps {

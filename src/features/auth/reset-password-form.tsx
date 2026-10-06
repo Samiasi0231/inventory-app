@@ -1,5 +1,7 @@
+"use client";
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CenteredSubmit, FormAlert } from "@/components/auth";
@@ -9,7 +11,7 @@ import { authApi } from "@/lib/api";
 import { resetPasswordSchema, type ResetPasswordValues } from "./auth.schema";
  
 export function ResetPasswordForm() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { email, resetToken, setResetToken } = useOnboarding();
   const [serverError, setServerError] = useState<string | null>(null);
  
@@ -27,7 +29,7 @@ export function ResetPasswordForm() {
     try {
       await authApi.resetPassword({ email, token: resetToken ?? "", password });
       setResetToken(null);
-      navigate("/password-changed", { replace: true });
+      router.replace("/password-changed");
     } catch {
       setServerError("We couldn't change your password. Please try again.");
     }

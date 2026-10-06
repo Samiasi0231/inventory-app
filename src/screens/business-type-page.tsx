@@ -1,9 +1,11 @@
-import { useNavigate } from "react-router-dom";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { BusinessTypePicker, OnboardingHeader, StepFooter } from "@/components/onboarding";
 import { useOnboarding } from "@/context/onboarding-context";
  
 export default function BusinessTypePage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { businessType, setBusinessType } = useOnboarding();
  
   return (
@@ -15,7 +17,7 @@ export default function BusinessTypePage() {
       <BusinessTypePicker value={businessType} onChange={setBusinessType} />
       <StepFooter
         nextDisabled={!businessType}
-        onNext={() => navigate("/onboarding/business-details")}
+        onNext={() => router.push("/onboarding/business-details")}
       />
     </section>
   );

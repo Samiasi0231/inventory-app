@@ -1,10 +1,12 @@
-import { useNavigate } from "react-router-dom";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { ArrowRight, Gem } from "lucide-react";
 import { PrimaryButton } from "@/components/button";
 import { StatusScreen } from "@/components/feedback/status-screen";
  
 export default function PasswordChangedPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
  
   return (
     <StatusScreen
@@ -14,7 +16,7 @@ export default function PasswordChangedPage() {
       description="You have successfully changed your password"
     >
       <PrimaryButton
-        onClick={() => navigate("/signin", { replace: true })}
+        onClick={() => router.replace("/signin")}
         rightIcon={<ArrowRight className="size-4" aria-hidden />}
         className="mt-6 w-full max-w-[290px]"
       >

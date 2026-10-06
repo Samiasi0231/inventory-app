@@ -1,17 +1,19 @@
+"use client";
+
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { OnboardingHeader } from "@/components/onboarding";
 import { useOnboarding } from "@/context/onboarding-context";
 import { BusinessDetailsForm } from "@/features/onboarding/business-details-form";
  
 export default function BusinessDetailsPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { businessType } = useOnboarding();
  
-  // A business type is required to land here — send people back if it's missing.
+  
   useEffect(() => {
-    if (!businessType) navigate("/onboarding/business-type", { replace: true });
-  }, [businessType, navigate]);
+    if (!businessType) router.replace("/onboarding/business-type");
+  }, [businessType, navigator]);
  
   return (
     <section>

@@ -1,5 +1,7 @@
+"use client";
+
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CountryField, SelectField, TextField } from "@/components/form";
@@ -13,7 +15,7 @@ const staffOptions = staffRanges.map((range) => ({ value: range, label: range })
 const currencyOptions = currencies.map((c) => ({ value: c.code, label: c.label }));
  
 export function BusinessDetailsForm() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { businessType } = useOnboarding();
  
   const {
@@ -53,7 +55,7 @@ export function BusinessDetailsForm() {
       businessType: businessType ?? "",
       country: countries.find((c) => c.code === values.country)?.name ?? values.country,
     });
-    navigate("/dashboard");
+    router.push("/dashboard");
   };
  
   return (
@@ -161,7 +163,7 @@ export function BusinessDetailsForm() {
       <StepFooter
         nextType="submit"
         loading={isSubmitting}
-        onBack={() => navigate("/onboarding/business-type")}
+        onBack={() => router.push("/onboarding/business-type")}
       />
     </form>
   );

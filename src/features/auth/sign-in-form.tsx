@@ -1,5 +1,8 @@
+"use client";
+
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PrimaryButton } from "@/components/button";
@@ -10,7 +13,7 @@ import { authApi } from "@/lib/api";
 import { signInSchema, type SignInValues } from "./auth.schema";
  
 export function SignInForm() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { setEmail } = useOnboarding();
   const [serverError, setServerError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -30,7 +33,7 @@ export function SignInForm() {
     try {
       const { email } = await authApi.signIn(values);
       setEmail(email);
-      navigate("/welcome-back");
+      router.push("/welcome-back");
     } catch {
       setError("password", { type: "server", message: "Wrong password" });
     }
@@ -42,7 +45,7 @@ export function SignInForm() {
     try {
       const { email } = await authApi.signUpWithGoogle();
       setEmail(email);
-      navigate("/welcome-back");
+      router.push("/welcome-back");
     } catch {
       setServerError("Google sign in failed. Please try again.");
     } finally {
@@ -69,8 +72,7 @@ export function SignInForm() {
         placeholder="Enter Password"
         error={errors.password?.message}
         action={
-          <Link
-            to="/forgot-password"
+          <Link href="/forgot-password"
             className="text-[11px] font-semibold text-neutral-700 hover:text-brand-600 hover:underline"
           >
             Forgot password
