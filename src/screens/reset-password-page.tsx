@@ -13,7 +13,7 @@ export default function ResetPasswordPage() {
   // A verified code is required to land here.
   useEffect(() => {
     if (!resetToken) router.replace("/forgot-password");
-  }, [resetToken, navigate]);
+  }, [resetToken, router]);
  
   return (
     <section>
