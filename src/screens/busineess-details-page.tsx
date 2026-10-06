@@ -13,7 +13,7 @@ export default function BusinessDetailsPage() {
   
   useEffect(() => {
     if (!businessType) router.replace("/onboarding/business-type");
-  }, [businessType, navigator]);
+  }, [businessType, router]);
  
   return (
     <section>
