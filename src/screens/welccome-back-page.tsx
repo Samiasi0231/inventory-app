@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MailCheck } from "lucide-react";
 import { StatusScreen } from "@/components/feedback/status-screen";
-import { navigation } from "next/cache";
  
 export default function WelcomeBackPage() {
   const router = useRouter();
@@ -12,7 +11,7 @@ export default function WelcomeBackPage() {
   useEffect(() => {
     const id = window.setTimeout(() => router.replace("/dashboard"), 2000);
     return () => window.clearTimeout(id);
-  }, [navigation]);
+  }, [router]);
  
   return (
     <StatusScreen
