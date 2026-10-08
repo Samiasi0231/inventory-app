@@ -17,8 +17,8 @@ Source file: `bmHj714cOuFgPYesLxlAMs`, page **Main Design** (`1:5`).
 | Onboarding | `2078:4425`, `2237:1511` | Business type, business details | Built |
 | Forgot password | `2264:2786` | Reset flow | Built |
 | Inventory | `379:1771` | Products, Transfer, Adjust, Reorder, Add Product | Built |
-| Transactions | `2268:14764` | Sales Orders, Invoices, Receipts, Returns, New Sale | New Sale + Invoices built; rest **missing** |
-| Purchasing | `2306:21590` | Purchase Orders, Receive Stock, Record Payment, Create Invoice, Return Goods, Product Detail | **Missing** |
+| Transactions | `2268:14764` | Sales Orders, Invoices, Receipts, Returns, New Sale | New Sale, Invoices, Sales Orders, Receipts built; Sales History + Credit Notes **missing** |
+| Purchasing | `2306:21590` | Purchase Orders, Receive Stock, Record Payment, Record Supplier Invoice, Return Goods, Product Detail | Purchase Orders + its modals built; Product Detail **missing** |
 | People | `2393:7505` | Staff, Customers, Suppliers | **Missing** |
 | Activity & audit | `2613:11332` | Audit Log, Activity Feed | **Missing** |
 | Corrections | `3033:18560` | Purchase order revisions | **Missing** |
@@ -30,9 +30,10 @@ Three different sidebars appear across the file:
 1. **Inventory frames** — Dashboard, Inventory, Transactions, Approvals, People, Activity & Audit, Reports, Settings
 2. **Invoices / Sales Orders frames** — Transactions groups *Sales Orders, Purchase Orders, Invoices, Payments, Receipts*
 3. **Receipts frame** — a top-level **Sales** group: *New Sales, Invoices, Sales History, Receipts, Credit Notes, Item List*
+4. **Purchasing frames** — **Sales** and **Purchase Order** as sibling top-level items, with the purchasing flows as modals rather than sub-screens
 
-The codebase currently implements a fourth arrangement agreed with the product
-owner: separate **Sales** and **Purchasing** top-level sections. Confirm with the
+The codebase implements the arrangement agreed with the product owner, which
+matches variant 4: separate **Sales** and **Purchase Order** top-level sections. Confirm with the
 designer before changing. Note variant 3 includes an **Item List** entry that is
 not yet in `nav-config.ts`.
 
@@ -171,7 +172,32 @@ Design differs from the current implementation:
 - Table: **Purchase ID · Supplier · Items · Total Amount · Date · Fulfilled · Payment · Status · Actions**
 - Status values: Pending Approval, Received, Completed, Cancelled
 - Row menu with **disabled** entries when not applicable: View Details, Receive Goods, Record Supplier Invoice, Return Products, Record Payment, Cancel Order
-- Related flows: Receive Stock, Record Payment, Create Invoice, Return Goods, Product Detail Page, Export/Share panel
+- Related flows: Receive Stock, Record Payment, Record Supplier Invoice, Return Goods, Product Detail Page, Export/Share panel
+
+#### Purchasing modals
+
+**Record Payment** — subtitle "Record a payment for P-001 from Lagos food co". Opens
+with an accent summary block listing Order Total, Already Paid and Balance Due,
+then Amount Paid, Reference Number, Payment Method, Payment Date and an optional
+Note with a 0/500 counter. Actions: Cancel · Record Payment.
+
+**Receive Products** — subtitle "Enter the quantities actually received for P-001".
+Table of Product · Variant · Ordered · Received (input) · Unit · Batch No. (input)
+· Expiry Date (input). Actions: Cancel · Receive Stock.
+
+**Return Products** — subtitle "Enter details to return goods". Date and Created by
+above a table of Product · Variant · Ordered · Received · Unit · Return Qty (input)
+· Batch No. (input) · Reason for Return (select: Damaged, Expired, Wrong order).
+Notes (Optional) below. Actions: Cancel · Create Return Request.
+
+**Create Purchase Order** — three steps: Supplier and Logistics, Products, Review.
+Step one carries Order Date, Created by, Receiving Branch, Select Supplier with an
+"Add New Supplier" link, Supplier's Reference/Invoice Number, Expected Delivery,
+Delivery Method and Notes.
+
+**Record Supplier Invoice** — three steps: Invoice Details, Products, Review. Step
+one carries Billed To, Created by, Invoice Type, Supplier, Issue Date, Due Date and
+Notes.
 
 ### 4.7 People — *not built*
 

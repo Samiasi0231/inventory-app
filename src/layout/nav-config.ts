@@ -58,16 +58,7 @@ export const NAV_ITEMS: NavItem[] = [
       { label: "Credit Notes", href: "/sales/credit-notes", icon: FileMinusIcon },
     ],
   },
-  {
-    label: "Purchasing",
-    icon: ShoppingCartIcon,
-    href: "/purchasing/orders",
-    children: [
-      { label: "Purchase Orders", href: "/purchasing/orders", icon: FileTextIcon },
-      { label: "Receive Stock", href: "/purchasing/receive", icon: TruckIcon },
-      { label: "Payments", href: "/purchasing/payments", icon: WalletIcon },
-    ],
-  },
+  { label: "Purchase Order", icon: ShoppingCartIcon, href: "/purchasing/orders" },
   { label: "Approvals", icon: ClipboardCheckIcon, href: "/approvals" },
   {
     label: "People",
