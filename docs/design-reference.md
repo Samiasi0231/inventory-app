@@ -23,19 +23,30 @@ Source file: `bmHj714cOuFgPYesLxlAMs`, page **Main Design** (`1:5`).
 | Activity & audit | `2613:11332` | Audit Log, Activity Feed | **Missing** |
 | Corrections | `3033:18560` | Purchase order revisions | **Missing** |
 
-### Navigation — unresolved conflict
+### Navigation
 
-Three different sidebars appear across the file:
+The file contains two competing sidebars:
 
-1. **Inventory frames** — Dashboard, Inventory, Transactions, Approvals, People, Activity & Audit, Reports, Settings
-2. **Invoices / Sales Orders frames** — Transactions groups *Sales Orders, Purchase Orders, Invoices, Payments, Receipts*
-3. **Receipts frame** — a top-level **Sales** group: *New Sales, Invoices, Sales History, Receipts, Credit Notes, Item List*
-4. **Purchasing frames** — **Sales** and **Purchase Order** as sibling top-level items, with the purchasing flows as modals rather than sub-screens
+| Structure | Frames | Children |
+| --- | --- | --- |
+| **Transactions** | Sales Orders, Invoices, New Sale, and the newest Purchase Order frames (`3293:*`) | Sales Orders, Purchase Orders, Invoices, Payments, Receipts |
+| **Sales** | the Receipts frame only | New Sales, Invoices, Sales History, Receipts, Credit Notes, Item List |
 
-The codebase implements the arrangement agreed with the product owner, which
-matches variant 4: separate **Sales** and **Purchase Order** top-level sections. Confirm with the
-designer before changing. Note variant 3 includes an **Item List** entry that is
-not yet in `nav-config.ts`.
+Four frames carry the first, including the most recently updated batch, so the
+codebase follows it: a single **Transactions** group, with Purchase Orders nested
+inside rather than sitting at the top level.
+
+Two consequences worth knowing:
+
+- **New Sale has no nav entry.** It is reached from the "Add New Sales" button in
+  the topbar, which is how the design presents it.
+- **Routes still live under `/sales/*` and `/purchasing/*`** while the nav groups
+  them under Transactions. The breadcrumb derives from the nav, so it reads
+  correctly; only the URLs differ. Moving them to `/transactions/*` would align
+  the two if that is wanted later.
+
+Sales History, Credit Notes and Item List appear only in the Sales variant. Their
+routes exist as placeholders but are not linked from the sidebar.
 
 ---
 
