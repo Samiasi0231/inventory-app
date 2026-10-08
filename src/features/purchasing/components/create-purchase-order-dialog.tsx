@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeftIcon, ArrowRightIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, ChevronDownIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { z } from "zod";
 import { FormDialog } from "@/components/common/form-dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
@@ -11,10 +11,11 @@ import { Field, SelectInput, TextInput, TextareaInput } from "@/components/form/
 import { Stepper } from "@/components/ui/stepper";
 import { useToast } from "@/components/ui/toast";
 import { useBranch } from "@/context/branch-context";
-import { formatCurrency } from "@/lib/format";
-import { MOCK_SUPPLIERS, MOCK_UNITS } from "@/features/inventory/mock-data";
+import { formatNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { MOCK_INVENTORY_RECORDS, MOCK_SUPPLIERS } from "@/features/inventory/mock-data";
 import { purchasingService } from "../purchasing.service";
-import { DELIVERY_METHODS } from "../types";
+import { DELIVERY_METHODS, PURCHASE_UNITS, PRODUCT_VARIANTS } from "../types";
 
 const CREATED_BY_OPTIONS = ["Inventory Manager", "Branch Manager", "Owner"];
 
@@ -36,7 +37,7 @@ const schema = z.object({
   lines: z
     .array(
       z.object({
-        productName: z.string().min(1, "Name the product"),
+        productName: z.string().min(1, "Choose a product"),
         variant: z.string().optional(),
         unit: z.string().min(1, "Pick a unit"),
         quantity: z.coerce.number().positive("Enter a quantity"),
@@ -54,38 +55,69 @@ const STEP_FIELDS: (keyof CreateOrderValues)[][] = [
   [],
 ];
 
+/** A line to pre-fill, e.g. the product a reorder was started from. */
+export interface SeedLine {
+  productName: string;
+  unitCost: number;
+  quantity?: number;
+}
+
 interface CreatePurchaseOrderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  seedLine?: SeedLine;
 }
+
+/** Catalog products offered on the Products step, with their last cost. */
+const CATALOG = (() => {
+  const seen = new Map<string, number>();
+  for (const record of MOCK_INVENTORY_RECORDS) {
+    if (!seen.has(record.name)) seen.set(record.name, record.costPrice);
+  }
+  return [...seen.entries()].map(([name, unitCost]) => ({ name, unitCost }));
+})();
+
+const blankLine = {
+  productName: "",
+  variant: PRODUCT_VARIANTS[0],
+  unit: PURCHASE_UNITS[1],
+  quantity: 1,
+  unitCost: 0,
+};
+
+/** Borderless until hovered or focused, as the Products table is drawn. */
+const inlineControl =
+  "h-9 border-transparent bg-transparent px-2 text-xs hover:border-border focus-visible:border-primary";
 
 export function CreatePurchaseOrderDialog({
   open,
   onOpenChange,
   onSuccess,
+  seedLine,
 }: CreatePurchaseOrderDialogProps) {
   const [stepIndex, setStepIndex] = useState(0);
-  const { branches, activeBranch } = useBranch();
+  const { branches } = useBranch();
   const toast = useToast();
 
-  const defaults: CreateOrderValues = {
-    orderDate: new Date().toISOString().slice(0, 10),
-    createdBy: CREATED_BY_OPTIONS[0],
-    branchId: activeBranch.id,
-    supplierId: "",
-    supplierReference: "",
-    expectedDelivery: "",
-    deliveryMethod: DELIVERY_METHODS[0].value,
-    notes: "",
-    lines: [{ productName: "", variant: "", unit: "Carton", quantity: 1, unitCost: 0 }],
-  };
-
-  const form = useForm<CreateOrderValues>({
-    resolver: zodResolver(schema),
-    defaultValues: defaults,
-    mode: "onTouched",
-  });
+  const defaults: CreateOrderValues = useMemo(
+    () => ({
+      orderDate: new Date().toISOString().slice(0, 10),
+      createdBy: CREATED_BY_OPTIONS[0],
+      branchId: "",
+      supplierId: "",
+      supplierReference: "",
+      expectedDelivery: "",
+      deliveryMethod: DELIVERY_METHODS[0].value,
+      notes: "",
+      lines: [
+        seedLine
+          ? { ...blankLine, productName: seedLine.productName, unitCost: seedLine.unitCost, quantity: seedLine.quantity ?? 1 }
+          : blankLine,
+      ],
+    }),
+    [seedLine],
+  );
 
   const {
     register,
@@ -94,15 +126,19 @@ export function CreatePurchaseOrderDialog({
     trigger,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
-  } = form;
+  } = useForm<CreateOrderValues>({
+    resolver: zodResolver(schema),
+    defaultValues: defaults,
+    mode: "onTouched",
+  });
 
   const { fields, append, remove } = useFieldArray({ control, name: "lines" });
   const lines = watch("lines") ?? [];
-  const orderTotal = lines.reduce(
-    (sum, line) => sum + Number(line.quantity || 0) * Number(line.unitCost || 0),
-    0,
-  );
+  const lineTotal = (line: { quantity?: unknown; unitCost?: unknown }) =>
+    Number(line.quantity || 0) * Number(line.unitCost || 0);
+  const grandTotal = lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
   /** Clear the wizard on close so the next one starts from a blank form. */
   function handleOpenChange(nextOpen: boolean) {
@@ -161,6 +197,8 @@ export function CreatePurchaseOrderDialog({
   const supplierName =
     MOCK_SUPPLIERS.find((supplier) => supplier.id === watch("supplierId"))?.name ?? "—";
   const branchName = branches.find((branch) => branch.id === watch("branchId"))?.name ?? "—";
+  const deliveryLabel =
+    DELIVERY_METHODS.find((method) => method.value === watch("deliveryMethod"))?.label ?? "—";
 
   return (
     <FormDialog
@@ -221,30 +259,21 @@ export function CreatePurchaseOrderDialog({
                     ))}
                   </SelectInput>
                 </Field>
+              </div>
 
-                <Field
-                  label="Receiving Branch"
-                  htmlFor="branchId"
-                  required
-                  error={errors.branchId?.message}
-                  className="sm:col-span-2"
-                >
-                  <SelectInput id="branchId" invalid={!!errors.branchId} {...register("branchId")}>
-                    <option value="">Select Branch</option>
-                    {branches.map((branch) => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </option>
-                    ))}
-                  </SelectInput>
-                </Field>
+              <Field label="Receiving Branch" htmlFor="branchId" error={errors.branchId?.message}>
+                <SelectInput id="branchId" invalid={!!errors.branchId} {...register("branchId")}>
+                  <option value="">Select Branch</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </SelectInput>
+              </Field>
 
-                <Field
-                  label="Select Supplier"
-                  htmlFor="supplierId"
-                  required
-                  error={errors.supplierId?.message}
-                >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Select Supplier" htmlFor="supplierId" error={errors.supplierId?.message}>
                   <SelectInput
                     id="supplierId"
                     invalid={!!errors.supplierId}
@@ -270,9 +299,9 @@ export function CreatePurchaseOrderDialog({
 
               <button
                 type="button"
-                className="flex w-fit items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-brand-700"
+                className="-mt-2 flex w-fit items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-brand-700"
               >
-                <PlusIcon className="size-4" />
+                <PlusIcon className="size-3.5" />
                 Add New Supplier
               </button>
 
@@ -315,86 +344,148 @@ export function CreatePurchaseOrderDialog({
           {stepIndex === 1 && (
             <div className="flex flex-col gap-3">
               <div>
-                <h3 className="text-base font-semibold text-ink-1">Products</h3>
-                <p className="mt-0.5 text-xs text-ink-3">Choose items…</p>
+                <h3 className="text-sm font-semibold text-ink-2">Products</h3>
+                <p className="mt-1 text-[11px] text-ink-3">Choose items…</p>
               </div>
 
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <div className="grid min-w-[720px] grid-cols-[1.3fr_1fr_0.8fr_0.8fr_1fr_auto] gap-3 bg-surface-muted px-4 py-3 text-xs font-semibold text-ink-1">
+              <div className="overflow-x-auto rounded-lg border border-border/70">
+                <div className="grid min-w-[760px] grid-cols-[1.5fr_1.1fr_1.1fr_0.7fr_1fr_1fr_32px] gap-2 bg-surface-muted px-4 py-3 text-[11px] font-semibold text-ink-1">
                   <span>Product</span>
                   <span>Variant</span>
                   <span>Unit</span>
                   <span>Quantity</span>
-                  <span>Unit Cost</span>
-                  <span className="w-8" />
+                  <span>Unit Cost (₦)</span>
+                  <span>Total (₦)</span>
+                  <span />
                 </div>
 
-                {fields.map((field, index) => (
-                  <div
-                    key={field.id}
-                    className="grid min-w-[720px] grid-cols-[1.3fr_1fr_0.8fr_0.8fr_1fr_auto] items-center gap-3 border-t border-border/60 px-4 py-3"
-                  >
-                    <TextInput
-                      aria-label="Product"
-                      placeholder="Minimie Chin Chin"
-                      className="h-9 text-sm"
-                      invalid={!!errors.lines?.[index]?.productName}
-                      {...register(`lines.${index}.productName`)}
-                    />
-                    <TextInput
-                      aria-label="Variant"
-                      placeholder="Large / Milk"
-                      className="h-9 text-sm"
-                      {...register(`lines.${index}.variant`)}
-                    />
-                    <SelectInput
-                      aria-label="Unit"
-                      className="h-9 text-sm"
-                      {...register(`lines.${index}.unit`)}
+                {fields.map((field, index) => {
+                  const productRegistration = register(`lines.${index}.productName`);
+                  return (
+                    <div
+                      key={field.id}
+                      className="grid min-w-[760px] grid-cols-[1.5fr_1.1fr_1.1fr_0.7fr_1fr_1fr_32px] items-center gap-2 border-t border-border/50 px-4 py-2"
                     >
-                      {MOCK_UNITS.map((unit) => (
-                        <option key={unit.id} value={unit.name}>
-                          {unit.name}
-                        </option>
-                      ))}
-                    </SelectInput>
-                    <TextInput
-                      aria-label="Quantity"
-                      type="number"
-                      min={1}
-                      className="h-9 text-sm"
-                      invalid={!!errors.lines?.[index]?.quantity}
-                      {...register(`lines.${index}.quantity`)}
-                    />
-                    <TextInput
-                      aria-label="Unit cost"
-                      type="number"
-                      min={0}
-                      className="h-9 text-sm"
-                      invalid={!!errors.lines?.[index]?.unitCost}
-                      {...register(`lines.${index}.unitCost`)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      disabled={fields.length === 1}
-                      aria-label="Remove product"
-                      className="justify-self-end rounded-md p-2 text-ink-4 transition-colors hover:bg-danger-bg hover:text-danger-fg disabled:pointer-events-none disabled:opacity-40"
-                    >
-                      <Trash2Icon className="size-4" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="relative">
+                        <select
+                          aria-label="Product"
+                          {...productRegistration}
+                          onChange={(event) => {
+                            productRegistration.onChange(event);
+                            const match = CATALOG.find((entry) => entry.name === event.target.value);
+                            if (match) setValue(`lines.${index}.unitCost`, match.unitCost);
+                          }}
+                          className={cn(
+                            "w-full appearance-none rounded-lg border pr-6 text-ink-1 outline-none",
+                            inlineControl,
+                            errors.lines?.[index]?.productName && "border-destructive",
+                          )}
+                        >
+                          <option value="">Select product</option>
+                          {!CATALOG.some((entry) => entry.name === field.productName) &&
+                            field.productName && (
+                              <option value={field.productName}>{field.productName}</option>
+                            )}
+                          {CATALOG.map((entry) => (
+                            <option key={entry.name} value={entry.name}>
+                              {entry.name}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon
+                          aria-hidden
+                          className="pointer-events-none absolute top-1/2 right-1 size-3.5 -translate-y-1/2 text-ink-3"
+                        />
+                      </div>
+
+                      <div className="relative">
+                        <select
+                          aria-label="Variant"
+                          {...register(`lines.${index}.variant`)}
+                          className={cn(
+                            "w-full appearance-none rounded-lg border pr-6 text-ink-2 outline-none",
+                            inlineControl,
+                          )}
+                        >
+                          {PRODUCT_VARIANTS.map((variant) => (
+                            <option key={variant} value={variant}>
+                              {variant}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon
+                          aria-hidden
+                          className="pointer-events-none absolute top-1/2 right-1 size-3.5 -translate-y-1/2 text-ink-3"
+                        />
+                      </div>
+
+                      <div className="relative">
+                        <select
+                          aria-label="Unit"
+                          {...register(`lines.${index}.unit`)}
+                          className={cn(
+                            "w-full appearance-none rounded-lg border pr-6 text-ink-2 outline-none",
+                            inlineControl,
+                          )}
+                        >
+                          {PURCHASE_UNITS.map((unit) => (
+                            <option key={unit} value={unit}>
+                              {unit}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDownIcon
+                          aria-hidden
+                          className="pointer-events-none absolute top-1/2 right-1 size-3.5 -translate-y-1/2 text-ink-3"
+                        />
+                      </div>
+
+                      <TextInput
+                        aria-label="Quantity"
+                        type="number"
+                        min={1}
+                        className={cn(inlineControl, "rounded-lg")}
+                        invalid={!!errors.lines?.[index]?.quantity}
+                        {...register(`lines.${index}.quantity`)}
+                      />
+                      <TextInput
+                        aria-label="Unit cost"
+                        type="number"
+                        min={0}
+                        className={cn(inlineControl, "rounded-lg")}
+                        invalid={!!errors.lines?.[index]?.unitCost}
+                        {...register(`lines.${index}.unitCost`)}
+                      />
+                      <p className="px-2 text-xs text-ink-2" aria-label="Line total">
+                        {formatNumber(lineTotal(lines[index] ?? {}))}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => remove(index)}
+                        disabled={fields.length === 1}
+                        aria-label="Remove product"
+                        className="justify-self-end rounded-md p-1.5 text-ink-3 transition-colors hover:bg-danger-bg hover:text-danger-fg disabled:pointer-events-none disabled:opacity-40"
+                      >
+                        <Trash2Icon className="size-4" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
+
+              {errors.lines?.message && (
+                <p role="alert" className="text-xs text-destructive">
+                  {errors.lines.message}
+                </p>
+              )}
 
               <button
                 type="button"
-                onClick={() =>
-                  append({ productName: "", variant: "", unit: "Carton", quantity: 1, unitCost: 0 })
-                }
-                className="flex w-fit items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-brand-700"
+                onClick={() => append(blankLine)}
+                className="flex w-fit items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-brand-700"
               >
-                <PlusIcon className="size-4" />
+                <PlusIcon className="size-3.5" />
                 Add Product
               </button>
             </div>
@@ -402,57 +493,49 @@ export function CreatePurchaseOrderDialog({
 
           {stepIndex === 2 && (
             <div className="flex flex-col gap-5">
-              <section className="rounded-xl border border-border/70 p-5">
-                <h3 className="mb-4 text-sm font-semibold text-ink-1">Supplier and Logistics</h3>
-                <dl className="grid gap-x-6 sm:grid-cols-2">
-                  <ReviewRow label="Order Date" value={watch("orderDate")} />
-                  <ReviewRow label="Created by" value={watch("createdBy")} />
-                  <ReviewRow label="Receiving Branch" value={branchName} />
-                  <ReviewRow label="Supplier" value={supplierName} />
-                  <ReviewRow label="Reference" value={watch("supplierReference") || "—"} />
-                  <ReviewRow label="Expected Delivery" value={watch("expectedDelivery") || "—"} />
-                  <ReviewRow
-                    label="Delivery Method"
-                    value={
-                      DELIVERY_METHODS.find((method) => method.value === watch("deliveryMethod"))
-                        ?.label ?? "—"
-                    }
-                  />
-                  <ReviewRow label="Notes" value={watch("notes") || "—"} />
-                </dl>
-              </section>
+              <ReviewCard title="Supplier and Logistics">
+                <ReviewRow label="Order Date:" value={formatReviewDate(watch("orderDate"))} />
+                <ReviewRow label="Created by:" value={watch("createdBy")} />
+                <ReviewRow label="Branch:" value={branchName} />
+                <ReviewRow label="Supplier:" value={supplierName} />
+                <ReviewRow
+                  label="Supplier's Reference/Invoice Number:"
+                  value={watch("supplierReference") || "—"}
+                />
+                <ReviewRow label="Delivery Method:" value={deliveryLabel} />
+                <ReviewRow label="Notes:" value={watch("notes") || "—"} wrap />
+              </ReviewCard>
 
-              <section className="rounded-xl border border-border/70 p-5">
-                <h3 className="mb-4 text-sm font-semibold text-ink-1">Products</h3>
-                <div className="overflow-x-auto rounded-lg border border-border">
-                  <div className="grid min-w-[560px] grid-cols-[1.3fr_1fr_0.8fr_0.8fr_1fr] gap-3 bg-surface-muted px-4 py-3 text-xs font-semibold text-ink-1">
+              <ReviewCard title="Products">
+                <div className="overflow-x-auto rounded-lg border border-border/70">
+                  <div className="grid min-w-[560px] grid-cols-[1.4fr_1fr_0.8fr_0.7fr_1fr_1fr] gap-3 bg-surface-muted px-4 py-3 text-[11px] font-semibold text-ink-1">
                     <span>Product</span>
                     <span>Variant</span>
                     <span>Unit</span>
                     <span>Quantity</span>
-                    <span>Unit Cost</span>
+                    <span>Unit Cost (₦)</span>
+                    <span>Total (₦)</span>
                   </div>
                   {lines.map((line, index) => (
                     <div
                       key={index}
-                      className="grid min-w-[560px] grid-cols-[1.3fr_1fr_0.8fr_0.8fr_1fr] gap-3 border-t border-border/60 px-4 py-3 text-xs text-ink-2"
+                      className="grid min-w-[560px] grid-cols-[1.4fr_1fr_0.8fr_0.7fr_1fr_1fr] gap-3 border-t border-border/50 px-4 py-3 text-xs text-ink-2"
                     >
-                      <span className="truncate">{line.productName || "—"}</span>
-                      <span className="truncate">{line.variant || "—"}</span>
+                      <span>{line.productName || "—"}</span>
+                      <span>{line.variant || "—"}</span>
                       <span>{line.unit}</span>
                       <span>{String(line.quantity)}</span>
-                      <span>{formatCurrency(Number(line.unitCost) || 0)}</span>
+                      <span>{formatNumber(Number(line.unitCost) || 0)}</span>
+                      <span>{formatNumber(lineTotal(line))}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-4 flex items-center justify-between border-t border-dashed border-border pt-3">
-                  <span className="text-sm font-semibold text-ink-1">Order total</span>
-                  <span className="text-lg font-semibold text-ink-1">
-                    {formatCurrency(orderTotal)}
-                  </span>
+                <div className="mt-4 flex items-center justify-between rounded-lg bg-accent px-4 py-3 text-accent-foreground">
+                  <span className="text-xs font-semibold">Grand Total</span>
+                  <span className="text-sm font-semibold">₦{formatNumber(grandTotal)}</span>
                 </div>
-              </section>
+              </ReviewCard>
             </div>
           )}
         </form>
@@ -461,11 +544,30 @@ export function CreatePurchaseOrderDialog({
   );
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
+function formatReviewDate(value: string) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("en-NG", { day: "2-digit", month: "short", year: "numeric" }).format(
+    new Date(value),
+  );
+}
+
+function ReviewCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[150px_1fr] gap-3 py-1.5">
-      <dt className="text-xs text-ink-3">{label}</dt>
-      <dd className="min-w-0 text-xs break-words text-ink-1">{value}</dd>
+    <section className="rounded-xl border border-border/70 p-5 shadow-[0_1px_0_0_rgba(0,0,0,0.06)]">
+      <h3 className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-ink-1">
+        <span aria-hidden className="size-1 rounded-full bg-ink-1" />
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function ReviewRow({ label, value, wrap }: { label: string; value: string; wrap?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-6 py-1.5 text-[13px]">
+      <dt className="shrink-0 text-ink-3">{label}</dt>
+      <dd className={cn("text-right text-ink-2", wrap ? "max-w-[260px]" : "")}>{value}</dd>
     </div>
   );
 }

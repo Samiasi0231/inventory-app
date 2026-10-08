@@ -30,7 +30,7 @@ import {
 } from "@/features/inventory/components/inventory-filters";
 import { ProductsTable } from "@/features/inventory/components/products-table";
 import type { RowAction } from "@/features/inventory/components/product-row-actions";
-import { ReorderStockDialog } from "@/features/inventory/components/reorder-stock-dialog";
+import { CreatePurchaseOrderDialog } from "@/features/purchasing/components/create-purchase-order-dialog";
 import { TransferStockDialog } from "@/features/inventory/components/transfer-stock-dialog";
 import { inventoryService } from "@/features/inventory/inventory.service";
 import type { InventoryItem } from "@/features/inventory/types";
@@ -305,12 +305,15 @@ export default function InventoryProductsPage({
             onOpenChange={(open) => setDialog(open ? "adjust" : null)}
             onSuccess={handleMutationSuccess}
           />
-          <ReorderStockDialog
+          <CreatePurchaseOrderDialog
             key={`reorder-${dialogKey}`}
-            item={activeItem}
+            seedLine={{
+              productName: activeItem.name,
+              unitCost: activeItem.costPrice,
+              quantity: Math.max(1, activeItem.reorderPoint - activeItem.totalStock),
+            }}
             open={dialog === "reorder"}
             onOpenChange={(open) => setDialog(open ? "reorder" : null)}
-            onSuccess={handleMutationSuccess}
           />
         </>
       )}

@@ -15,13 +15,11 @@ import {
   type InventoryItem,
   type InventoryListParams,
   type InventorySummary,
-  type ReorderStockPayload,
   type TransferStockPayload,
 } from "./types";
 
 /**
- * Mock for the Inventory API: lets the UI run without a backend, simulating
- * network latency and the branch-scoping the real endpoints will do.
+ * All of the implementations here are Mock for the Inventory API: Implementations i think are sufficient for the UI to function without a real backend.
  */
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -170,11 +168,6 @@ export const inventoryService = {
     return { reference: `ADJ-${Date.now().toString().slice(-6)}` };
   },
 
-  /** Records the reorder intent; it does not create the purchase order. */
-  async reorderStock(_payload: ReorderStockPayload): Promise<{ reference: string }> {
-    await sleep(800);
-    return { reference: `PO-${Date.now().toString().slice(-6)}` };
-  },
 
   async archiveItem(id: ID): Promise<void> {
     await sleep(600);

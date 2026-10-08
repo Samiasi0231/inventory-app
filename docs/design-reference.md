@@ -210,6 +210,26 @@ Delivery Method and Notes.
 one carries Billed To, Created by, Invoice Type, Supplier, Issue Date, Due Date and
 Notes.
 
+### 4.6b Inventory — Reorder Stock
+
+Reorder Stock is **not** its own form. It opens the same three-step
+**Create Purchase Order** wizard used by Purchasing, with the product pre-filled
+from the row it was started on:
+
+1. **Supplier and Logistics** — Order Date, Created by, Receiving Branch, Select
+   Supplier (+ Add New Supplier), Supplier's Reference/Invoice Number, Expected
+   Delivery, Delivery Method, Notes
+2. **Products** — table of Product · Variant · Unit · Quantity · Unit Cost (₦) ·
+   Total (₦), a trash icon per row and "+ Add Product". The cells are borderless
+   dropdowns and plain figures inside a single bordered container
+3. **Review** — a "Supplier and Logistics" card (label left, value right) and a
+   "Products" card with the same table plus an accent **Grand Total** bar
+
+The stepper shows completed steps with a tick and a green label.
+
+Known copy slips in the frames, deliberately not reproduced: "Order Dtae",
+"purchse", and a primary button reading "Request Transfer" on every step.
+
 ### 4.7 People — *not built*
 
 Three tabs, each a list plus modal flows:

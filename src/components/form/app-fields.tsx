@@ -96,7 +96,8 @@ export const SelectInput = forwardRef<
       aria-invalid={invalid || undefined}
       className={cn(
         controlClass,
-        "appearance-none pr-10",
+        // An empty value is the placeholder option, so draw it as placeholder text.
+        "appearance-none pr-10 has-[option[value='']:checked]:text-ink-4",
         invalid && controlErrorClass,
         className,
       )}

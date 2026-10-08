@@ -132,3 +132,8 @@ export const PURCHASE_PAYMENT_METHODS = [
   { value: "cheque", label: "Cheque" },
   { value: "card", label: "Card" },
 ];
+
+/** Pack sizes offered when ordering. */
+export const PURCHASE_UNITS = ["Piece", "Carton (24)", "Carton (12)", "Bag", "Roll", "Bottle"];
+
+export const PRODUCT_VARIANTS = ["Original", "Large / Milk", "Small / Dark", "Medium / Milk"];
