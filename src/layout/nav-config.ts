@@ -1,18 +1,11 @@
 import {
-  ArchiveIcon,
   ChartColumnIcon,
   ClipboardCheckIcon,
-  ClipboardListIcon,
   FileTextIcon,
-  HistoryIcon,
   LayoutGridIcon,
   type LucideIcon,
   PackageIcon,
-  ReceiptIcon,
   SettingsIcon,
-  ShoppingCartIcon,
-  TrendingUpIcon,
-  TruckIcon,
   UsersIcon,
   WalletIcon,
 } from "lucide-react";
@@ -20,7 +13,6 @@ import {
 export interface NavChild {
   label: string;
   href: string;
-  icon: LucideIcon;
 }
 
 export interface NavItem {
@@ -39,9 +31,9 @@ export const NAV_ITEMS: NavItem[] = [
     icon: PackageIcon,
     href: "/inventory/products",
     children: [
-      { label: "Products", href: "/inventory/products", icon: TrendingUpIcon },
-      { label: "Stock History", href: "/inventory/stock-history", icon: HistoryIcon },
-      { label: "Archived", href: "/inventory/archived", icon: ArchiveIcon },
+      { label: "Products", href: "/inventory/products" },
+      { label: "Stock History", href: "/inventory/stock-history" },
+      { label: "Archived", href: "/inventory/archived" },
     ],
   },
   {
@@ -49,11 +41,11 @@ export const NAV_ITEMS: NavItem[] = [
     icon: WalletIcon,
     href: "/sales/orders",
     children: [
-      { label: "Sales Orders", href: "/sales/orders", icon: ClipboardListIcon },
-      { label: "Purchase Orders", href: "/purchasing/orders", icon: ShoppingCartIcon },
-      { label: "Invoices", href: "/sales/invoices", icon: FileTextIcon },
-      { label: "Payments", href: "/sales/payments", icon: WalletIcon },
-      { label: "Receipts", href: "/sales/receipts", icon: ReceiptIcon },
+      { label: "Sales Orders", href: "/sales/orders" },
+      { label: "Purchase Orders", href: "/purchasing/orders" },
+      { label: "Invoices", href: "/sales/invoices" },
+      { label: "Payments", href: "/sales/payments" },
+      { label: "Receipts", href: "/sales/receipts" },
     ],
   },
   { label: "Approvals", icon: ClipboardCheckIcon, href: "/approvals" },
@@ -62,8 +54,8 @@ export const NAV_ITEMS: NavItem[] = [
     icon: UsersIcon,
     href: "/people",
     children: [
-      { label: "Staff", href: "/people/staff", icon: UsersIcon },
-      { label: "Suppliers", href: "/people/suppliers", icon: TruckIcon },
+      { label: "Staff", href: "/people/staff" },
+      { label: "Suppliers", href: "/people/suppliers" },
     ],
   },
   {
@@ -71,8 +63,8 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FileTextIcon,
     href: "/activity",
     children: [
-      { label: "Activity Log", href: "/activity/log", icon: HistoryIcon },
-      { label: "Audit Trail", href: "/activity/audit", icon: FileTextIcon },
+      { label: "Activity Log", href: "/activity/log" },
+      { label: "Audit Trail", href: "/activity/audit" },
     ],
   },
   { label: "Reports", icon: ChartColumnIcon, href: "/reports" },

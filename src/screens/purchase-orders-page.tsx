@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2Icon,
   ChevronDownIcon,
@@ -58,6 +59,7 @@ const SCOPES: { value: PurchaseOrderStatus | "all"; label: string }[] = [
 type DialogKind = "receive" | "invoice" | "return" | "payment" | "cancel" | null;
 
 export default function PurchaseOrdersPage() {
+  const router = useRouter();
   const { activeBranch } = useBranch();
   const toast = useToast();
 
@@ -123,11 +125,7 @@ export default function PurchaseOrdersPage() {
     setDialogKey((key) => key + 1);
 
     if (action === "view") {
-      toast.add({
-        type: "info",
-        title: order.purchaseId,
-        description: `${order.supplierName} · ${PURCHASE_STATUS_LABELS[order.status]}`,
-      });
+      router.push(`/purchasing/orders/${order.id}`);
       return;
     }
 

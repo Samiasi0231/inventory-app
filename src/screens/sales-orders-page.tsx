@@ -113,7 +113,22 @@ export default function SalesOrdersPage() {
       return;
     }
 
-    if (action === "view_invoice") {
+    if (action === "view") {
+      router.push(`/sales/orders/${order.id}`);
+      return;
+    }
+
+    if (action === "view_returns") {
+      router.push(`/sales/orders/${order.id}?tab=returns`);
+      return;
+    }
+
+    if (action === "record_payment") {
+      router.push(`/sales/orders/${order.id}?tab=payments`);
+      return;
+    }
+
+    if (action === "view_invoice" || action === "create_invoice") {
       router.push("/sales/invoices");
       return;
     }
@@ -138,11 +153,7 @@ export default function SalesOrdersPage() {
       return;
     }
 
-    toast.add({
-      type: "info",
-      title: order.orderId,
-      description: `${order.customerName} · ${ORDER_STATUS_LABELS[order.status]}`,
-    });
+    router.push(`/sales/orders/${order.id}`);
   }
 
   async function confirmCancel() {

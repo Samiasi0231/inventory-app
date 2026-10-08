@@ -105,6 +105,11 @@ export const ordersService = {
     };
   },
 
+  async getOrder(id: ID): Promise<SalesOrder | null> {
+    await sleep(300);
+    return orders.find((order) => order.id === id) ?? null;
+  },
+
   /** Summary figures, scoped to the branch being viewed. */
   async getSummary(params: { branchId?: ID } = {}): Promise<SalesOrderSummary> {
     await sleep(400);

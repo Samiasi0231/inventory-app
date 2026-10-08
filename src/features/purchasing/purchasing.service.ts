@@ -30,7 +30,8 @@ const STATUS_CYCLE: PurchaseOrderStatus[] = [
   "cancelled",
 ];
 
-const AMOUNTS = [55_000, 70_000, 10_000, 70_000, 80_000, 2_000_000, 70_000, 80_000, 60_000, 500_000];
+/** Delivery and handling added on top of the line subtotal. */
+const OTHER_COSTS = [0, 50_000, 0, 25_000, 0, 15_000];
 
 const VARIANTS = [
   "Small / Milk",
@@ -41,15 +42,19 @@ const VARIANTS = [
   "Large / Dark",
 ];
 
-function buildLines(index: number, received: boolean): PurchaseOrderLine[] {
+type ReceiptMode = "none" | "partial" | "full";
+
+function buildLines(index: number, mode: ReceiptMode): PurchaseOrderLine[] {
   return VARIANTS.map((variant, position) => {
     const ordered = [20, 15, 30, 25, 10, 8][position];
+    const received =
+      mode === "full" ? ordered : mode === "partial" ? Math.floor(ordered / 2) : 0;
     return {
       productId: `prd_choc_${position}`,
       productName: "Chocolate",
       variant,
       ordered,
-      received: received ? ordered : 0,
+      received,
       unit: "Piece",
       batchNumber: `CHC-B-${String(position + 1).padStart(3, "0")}`,
       expiryDate: new Date(2027, position * 2, 12).toISOString(),
@@ -60,18 +65,24 @@ function buildLines(index: number, received: boolean): PurchaseOrderLine[] {
 
 function buildOrder(index: number): PurchaseOrder {
   const status = STATUS_CYCLE[index % STATUS_CYCLE.length];
-  const totalAmount = AMOUNTS[index % AMOUNTS.length];
   const supplier = MOCK_SUPPLIERS[index % MOCK_SUPPLIERS.length];
-  const items = 20;
-
-  const fulfilled =
+  const lines = buildLines(
+    index,
     status === "pending_approval" || status === "cancelled"
-      ? status === "pending_approval"
-        ? 10
-        : 0
+      ? "none"
       : status === "partially_received"
-        ? 12
-        : items;
+        ? "partial"
+        : "full",
+  );
+
+  // Keep the header figures consistent with the lines, so the detail view's
+  // subtotal and total agree.
+  const subtotal = lines.reduce((sum, line) => sum + line.ordered * line.unitCost, 0);
+  const otherCosts = OTHER_COSTS[index % OTHER_COSTS.length];
+  const totalAmount = subtotal + otherCosts;
+  const items = lines.reduce((sum, line) => sum + line.ordered, 0);
+
+  const fulfilled = lines.reduce((sum, line) => sum + line.received, 0);
 
   const amountPaid =
     status === "cancelled"
@@ -94,7 +105,7 @@ function buildOrder(index: number): PurchaseOrder {
     fulfilled,
     status,
     branchId: index < 40 ? "br_ph" : BRANCH_IDS[index % BRANCH_IDS.length],
-    lines: buildLines(index, status !== "pending_approval" && status !== "cancelled"),
+    lines,
   };
 }
 
