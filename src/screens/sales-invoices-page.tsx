@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   DownloadIcon,
   FileTextIcon,
+  HourglassIcon,
   PlusIcon,
   SearchIcon,
   TriangleAlertIcon,
+  WalletIcon,
 } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
@@ -18,24 +20,20 @@ import { useToast } from "@/components/ui/toast";
 import { useBranch } from "@/context/branch-context";
 import { BranchSelector } from "@/layout/branch-selector";
 import { TopbarAction } from "@/layout/app-topbar";
-import { formatCurrency, formatCurrencyCompact, formatNumber } from "@/lib/format";
+import { formatCurrencyCompact, formatNumber } from "@/lib/format";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { SortDirection } from "@/types/shared";
 import { InvoicePreviewDialog } from "@/features/sales/components/invoice-preview-dialog";
 import type { InvoiceAction } from "@/features/sales/components/invoice-row-actions";
 import { InvoicesTable } from "@/features/sales/components/invoices-table";
-import { RecordPaymentDialog } from "@/features/sales/components/record-payment-dialog";
 import { salesService } from "@/features/sales/sales.service";
-import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceStatus } from "@/features/sales/types";
+import {
+  DEFAULT_INVOICE_FILTERS,
+  InvoiceFilters,
+  type InvoiceFilterState,
+} from "@/features/sales/components/invoice-filters";
+import type { Invoice } from "@/features/sales/types";
 import { useInvoiceList, useInvoiceSummary } from "@/features/sales/use-sales";
-
-const STATUS_FILTERS: (InvoiceStatus | "all")[] = [
-  "all",
-  "pending",
-  "partially_paid",
-  "paid",
-  "cancelled",
-];
 
 export default function SalesInvoicesPage() {
   const router = useRouter();
@@ -44,15 +42,14 @@ export default function SalesInvoicesPage() {
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 350);
-  const [status, setStatus] = useState<InvoiceStatus | "all">("all");
+  const [filters, setFilters] = useState<InvoiceFilterState>(DEFAULT_INVOICE_FILTERS);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<string | undefined>();
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
-  const [dialog, setDialog] = useState<"preview" | "payment" | "cancel" | null>(null);
-  const [dialogKey, setDialogKey] = useState(0);
-  const [cancelling, setCancelling] = useState(false);
+  const [dialog, setDialog] = useState<"preview" | "archive" | null>(null);
+  const [archiving, setArchiving] = useState(false);
 
   const params = useMemo(
     () => ({
@@ -60,11 +57,14 @@ export default function SalesInvoicesPage() {
       pageSize: 15,
       search: debouncedSearch || undefined,
       branchId: activeBranch.id,
-      status,
+      status: filters.status,
+      partyType: filters.partyType,
+      issuedFrom: filters.issuedFrom || undefined,
+      dueBefore: filters.dueBefore || undefined,
       sortBy,
       sortDirection,
     }),
-    [page, debouncedSearch, activeBranch.id, status, sortBy, sortDirection],
+    [page, debouncedSearch, activeBranch.id, filters, sortBy, sortDirection],
   );
 
   const list = useInvoiceList(params);
@@ -72,7 +72,7 @@ export default function SalesInvoicesPage() {
 
   const invoices = list.data?.data ?? [];
   const total = list.data?.total ?? 0;
-  const hasFilters = Boolean(debouncedSearch) || status !== "all";
+  const hasFilters = Boolean(debouncedSearch) || filters !== DEFAULT_INVOICE_FILTERS;
 
   function handleSortChange(column: string) {
     setPage(1);
@@ -86,50 +86,44 @@ export default function SalesInvoicesPage() {
 
   async function handleAction(action: InvoiceAction, invoice: Invoice) {
     setActiveInvoice(invoice);
-    setDialogKey((key) => key + 1);
 
-    if (action === "share") {
-      const summaryText = `${invoice.number} — ${formatCurrency(invoice.total)} for ${invoice.customerName}`;
+    if (action === "remind") {
       try {
-        await navigator.clipboard.writeText(summaryText);
-        toast.add({ type: "success", title: "Copied to clipboard", description: summaryText });
-      } catch {
+        await salesService.sendPaymentReminder(invoice.id);
         toast.add({
-          type: "error",
-          title: "Couldn't copy",
-          description: "Your browser blocked clipboard access.",
+          type: "success",
+          title: "Reminder sent",
+          description: `${invoice.customerName} has been reminded about ${invoice.number}.`,
         });
+      } catch {
+        toast.add({ type: "error", title: "Couldn't send reminder", description: "Please try again." });
       }
       return;
     }
 
-    setDialog(action === "view" ? "preview" : action === "payment" ? "payment" : "cancel");
+    setDialog(action === "view" ? "preview" : "archive");
   }
 
-  async function confirmCancel() {
+  async function confirmArchive() {
     if (!activeInvoice) return;
-    setCancelling(true);
+    setArchiving(true);
     try {
-      await salesService.cancelInvoice(activeInvoice.id);
+      await salesService.archiveInvoice(activeInvoice.id);
       toast.add({
         type: "success",
-        title: "Invoice cancelled",
-        description: `${activeInvoice.number} can no longer be paid. Issue a corrected invoice in its place.`,
+        title: "Invoice archived",
+        description: `${activeInvoice.number} has been archived. Issue a corrected invoice in its place.`,
       });
       setDialog(null);
       list.refetch();
       summary.refetch();
     } catch {
-      toast.add({ type: "error", title: "Couldn't cancel invoice", description: "Please try again." });
+      toast.add({ type: "error", title: "Couldn't archive invoice", description: "Please try again." });
     } finally {
-      setCancelling(false);
+      setArchiving(false);
     }
   }
 
-  function handleMutationSuccess() {
-    list.refetch();
-    summary.refetch();
-  }
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -170,31 +164,32 @@ export default function SalesInvoicesPage() {
           <>
             <StatCard
               icon={FileTextIcon}
-              label="Total Invoiced"
-              value={formatCurrencyCompact(summary.data.totalInvoiced)}
-              description="Across all invoices"
-              delta={summary.data.totalInvoicedDelta}
+              label="Invoiced"
+              value={formatCurrencyCompact(summary.data.invoiced)}
+              description={`${formatNumber(summary.data.invoicedCount)} invoices`}
+              delta={summary.data.invoicedDelta}
             />
             <StatCard
-              icon={FileTextIcon}
-              label="Total Paid"
-              value={formatCurrencyCompact(summary.data.totalPaid)}
+              icon={WalletIcon}
+              label="Paid"
+              value={formatCurrencyCompact(summary.data.paid)}
               description="Settled by customers"
-              delta={summary.data.totalPaidDelta}
+              delta={summary.data.paidDelta}
             />
             <StatCard
-              icon={FileTextIcon}
-              label="Balance Due"
-              value={formatCurrencyCompact(summary.data.balanceDue)}
-              description="Still outstanding"
-              delta={summary.data.balanceDueDelta}
+              icon={HourglassIcon}
+              label="Outstanding"
+              value={formatCurrencyCompact(summary.data.outstanding)}
+              description="Still to be collected"
+              delta={summary.data.outstandingDelta}
             />
             <StatCard
-              icon={FileTextIcon}
-              label="Overdue Invoices"
-              value={formatNumber(summary.data.overdueCount)}
-              description="Past their due date"
-              delta={summary.data.overdueCountDelta}
+              icon={TriangleAlertIcon}
+              label="Overdue"
+              value={formatCurrencyCompact(summary.data.overdue)}
+              description={`${formatNumber(summary.data.overdueCount)} invoices`}
+              delta={summary.data.overdueDelta}
+              valueClassName="text-destructive"
             />
           </>
         )}
@@ -217,26 +212,13 @@ export default function SalesInvoicesPage() {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {STATUS_FILTERS.map((entry) => (
-              <button
-                key={entry}
-                type="button"
-                aria-pressed={status === entry}
-                onClick={() => {
-                  setStatus(entry);
-                  setPage(1);
-                }}
-                className={
-                  status === entry
-                    ? "rounded-full border border-primary bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground"
-                    : "rounded-full border border-border px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-muted"
-                }
-              >
-                {entry === "all" ? "All" : INVOICE_STATUS_LABELS[entry]}
-              </button>
-            ))}
-          </div>
+          <InvoiceFilters
+            value={filters}
+            onChange={(next) => {
+              setFilters(next);
+              setPage(1);
+            }}
+          />
         </div>
 
         {list.error ? (
@@ -260,7 +242,7 @@ export default function SalesInvoicesPage() {
                 <SecondaryButton
                   onClick={() => {
                     setSearch("");
-                    setStatus("all");
+                    setFilters(DEFAULT_INVOICE_FILTERS);
                     setPage(1);
                   }}
                 >
@@ -292,43 +274,33 @@ export default function SalesInvoicesPage() {
         onOpenChange={(open) => setDialog(open ? "preview" : null)}
       />
 
-      {activeInvoice && (
-        <RecordPaymentDialog
-          key={`payment-${dialogKey}`}
-          invoice={activeInvoice}
-          open={dialog === "payment"}
-          onOpenChange={(open) => setDialog(open ? "payment" : null)}
-          onSuccess={handleMutationSuccess}
-        />
-      )}
-
       <FormDialog
-        open={dialog === "cancel"}
-        onOpenChange={(open) => setDialog(open ? "cancel" : null)}
-        title="Cancel invoice"
+        open={dialog === "archive"}
+        onOpenChange={(open) => setDialog(open ? "archive" : null)}
+        title="Archive invoice"
         description={
           activeInvoice
-            ? `${activeInvoice.number} will be voided and can no longer be paid.`
+            ? `${activeInvoice.number} will be moved out of the active list.`
             : undefined
         }
         className="sm:max-w-[440px]"
         footer={
           <>
-            <SecondaryButton onClick={() => setDialog(null)} disabled={cancelling}>
+            <SecondaryButton onClick={() => setDialog(null)} disabled={archiving}>
               Keep invoice
             </SecondaryButton>
             <PrimaryButton
-              onClick={confirmCancel}
-              loading={cancelling}
+              onClick={confirmArchive}
+              loading={archiving}
               className="bg-destructive hover:bg-destructive/90 active:bg-destructive"
             >
-              Cancel invoice
+              Archive invoice
             </PrimaryButton>
           </>
         }
       >
         <p className="text-sm text-ink-3">
-          Cancelling keeps the record for audit. To correct a mistake, cancel this invoice and issue
+          Archiving keeps the record for audit. To correct a mistake, archive this invoice and issue
           a new one in its place.
         </p>
       </FormDialog>

@@ -1,6 +1,6 @@
 "use client";
 
-import { BanIcon, EyeIcon, MoreHorizontalIcon, Share2Icon, WalletIcon } from "lucide-react";
+import { ArchiveIcon, BellIcon, EyeIcon, MoreHorizontalIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getInvoiceStatus, type Invoice } from "../types";
 
-export type InvoiceAction = "view" | "payment" | "share" | "cancel";
+export type InvoiceAction = "view" | "remind" | "archive";
 
 interface InvoiceRowActionsProps {
   invoice: Invoice & { cancelled?: boolean };
@@ -31,23 +31,19 @@ export function InvoiceRowActions({ invoice, onAction }: InvoiceRowActionsProps)
       <DropdownMenuContent>
         <DropdownMenuItem onClick={() => onAction("view", invoice)}>
           <EyeIcon />
-          View Invoice
+          View Details
         </DropdownMenuItem>
-        <DropdownMenuItem disabled={settled} onClick={() => onAction("payment", invoice)}>
-          <WalletIcon />
-          Record Payment
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onAction("share", invoice)}>
-          <Share2Icon />
-          Share
+        <DropdownMenuItem disabled={settled} onClick={() => onAction("remind", invoice)}>
+          <BellIcon />
+          Send Payment Reminder
         </DropdownMenuItem>
         <DropdownMenuItem
           variant="destructive"
           disabled={status === "cancelled"}
-          onClick={() => onAction("cancel", invoice)}
+          onClick={() => onAction("archive", invoice)}
         >
-          <BanIcon />
-          Cancel Invoice
+          <ArchiveIcon />
+          Archive Invoice
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

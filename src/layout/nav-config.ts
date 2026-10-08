@@ -2,6 +2,7 @@ import {
   ArchiveIcon,
   ChartColumnIcon,
   ClipboardCheckIcon,
+  ClipboardListIcon,
   FileMinusIcon,
   FileTextIcon,
   HistoryIcon,
@@ -50,6 +51,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/sales/new",
     children: [
       { label: "New Sales", href: "/sales/new", icon: ShoppingCartIcon },
+      { label: "Sales Orders", href: "/sales/orders", icon: ClipboardListIcon },
       { label: "Invoices", href: "/sales/invoices", icon: FileTextIcon },
       { label: "Sales History", href: "/sales/history", icon: HistoryIcon },
       { label: "Receipts", href: "/sales/receipts", icon: ReceiptIcon },

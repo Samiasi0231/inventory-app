@@ -40,6 +40,13 @@ function matchesFilters(invoice: InvoiceRecord, params: InvoiceListParams) {
     if (getInvoiceStatus(invoice) !== params.status) return false;
   }
 
+  if (params.partyType && params.partyType !== "all" && invoice.partyType !== params.partyType) {
+    return false;
+  }
+
+  if (params.issuedFrom && new Date(invoice.issueDate) < new Date(params.issuedFrom)) return false;
+  if (params.dueBefore && new Date(invoice.dueDate) > new Date(params.dueBefore)) return false;
+
   if (params.search) {
     const needle = params.search.trim().toLowerCase();
     const haystack = `${invoice.number} ${invoice.customerName}`.toLowerCase();
@@ -100,18 +107,26 @@ export const salesService = {
     );
     const now = Date.now();
 
+    const overdue = scoped.filter(
+      (invoice) => getBalanceDue(invoice) > 0 && new Date(invoice.dueDate).getTime() < now,
+    );
+
     return {
-      totalInvoiced: scoped.reduce((sum, invoice) => sum + invoice.total, 0),
-      totalInvoicedDelta: 4.8,
-      totalPaid: scoped.reduce((sum, invoice) => sum + invoice.amountPaid, 0),
-      totalPaidDelta: 6.1,
-      balanceDue: scoped.reduce((sum, invoice) => sum + getBalanceDue(invoice), 0),
-      balanceDueDelta: -3.4,
-      overdueCount: scoped.filter(
-        (invoice) => getBalanceDue(invoice) > 0 && new Date(invoice.dueDate).getTime() < now,
-      ).length,
-      overdueCountDelta: -5.2,
+      invoiced: scoped.reduce((sum, invoice) => sum + invoice.total, 0),
+      invoicedDelta: 4.8,
+      invoicedCount: scoped.length,
+      paid: scoped.reduce((sum, invoice) => sum + invoice.amountPaid, 0),
+      paidDelta: 6.1,
+      outstanding: scoped.reduce((sum, invoice) => sum + getBalanceDue(invoice), 0),
+      outstandingDelta: -3.4,
+      overdue: overdue.reduce((sum, invoice) => sum + getBalanceDue(invoice), 0),
+      overdueDelta: -5.2,
+      overdueCount: overdue.length,
     };
+  },
+
+  async sendPaymentReminder(_id: ID): Promise<void> {
+    await sleep(600);
   },
 
   async recordPayment(id: ID, amount: number): Promise<void> {
@@ -124,10 +139,10 @@ export const salesService = {
   },
 
   /**
-   * Invoices are locked once confirmed, so corrections cancel the original and
+   * Invoices are locked once confirmed, so corrections archive the original and
    * a fresh invoice is issued in its place.
    */
-  async cancelInvoice(id: ID): Promise<void> {
+  async archiveInvoice(id: ID): Promise<void> {
     await sleep(700);
     invoices = invoices.map((invoice) =>
       invoice.id === id ? { ...invoice, cancelled: true } : invoice,
@@ -174,6 +189,7 @@ export const salesService = {
       number,
       customerId: customer?.id ?? "cus_walk_in",
       customerName: customer?.name ?? "Walk-in customer",
+      partyType: "customer",
       issueDate: issued.toISOString(),
       dueDate: due.toISOString(),
       lines: payload.lines.map((line) => ({
