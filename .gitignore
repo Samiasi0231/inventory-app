@@ -28,3 +28,6 @@ next-env.d.ts
 out/
 node_modules/
 .env*
+
+# TypeScript incremental build info
+tsconfig.tsbuildinfo

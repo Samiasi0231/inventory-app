@@ -1,5 +1,5 @@
 ﻿import type { Metadata } from "next";
-import "@fontsource-variable/geist";
+import "@fontsource-variable/karla";
 import "./globals.css";
 import { OnboardingProvider } from "@/context/onboarding-context";
 

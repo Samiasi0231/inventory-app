@@ -1,18 +1,33 @@
 @import "tailwindcss";
 @import "tw-animate-css";
- 
+
 @custom-variant dark (&:is(.dark *));
- 
+
 @theme inline {
-  --font-sans: "Karla", ui-sans-serif, system-ui, sans-serif;
- 
-  --color-brand-50: #e9f7ef;
-  --color-brand-100: #d2efdf;
-  --color-brand-200: #a6dfbf;
-  --color-brand-500: #0b8f4d;
-  --color-brand-600: #087d43;
-  --color-brand-700: #066a39;
- 
+  --font-sans: "Karla Variable", "Karla", ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand scale. */
+  --color-brand-50: #e6fff3;
+  --color-brand-100: #c7f5de;
+  --color-brand-200: #9fe8c4;
+  --color-brand-500: #008c4b;
+  --color-brand-600: #007a41;
+  --color-brand-700: #006b39;
+
+  /* Text ramp, darkest to lightest. */
+  --color-ink-1: #2f2f2f;
+  --color-ink-2: #3e3d3d;
+  --color-ink-3: #676565;
+  --color-ink-4: #8d8c8c;
+
+  --color-surface: #fefefe;
+  --color-surface-muted: #f7f7f7;
+
+  --color-success-bg: #e6fff3;
+  --color-success-fg: #006b39;
+  --color-danger-bg: #ffe7e8;
+  --color-danger-fg: #e80d14;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -31,35 +46,35 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
- 
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
- 
+
 :root {
   --radius: 0.5rem;
   --background: #f7f7f7;
-  --foreground: #262626;
-  --card: #ffffff;
-  --card-foreground: #262626;
-  --popover: #ffffff;
-  --popover-foreground: #262626;
-  --primary: #0b8f4d;
-  --primary-foreground: #ffffff;
+  --foreground: #2f2f2f;
+  --card: #fefefe;
+  --card-foreground: #2f2f2f;
+  --popover: #fefefe;
+  --popover-foreground: #2f2f2f;
+  --primary: #008c4b;
+  --primary-foreground: #fefefe;
   --secondary: #f4f4f5;
-  --secondary-foreground: #262626;
-  --muted: #f4f4f5;
-  --muted-foreground: #737373;
-  --accent: #e9f7ef;
-  --accent-foreground: #066a39;
-  --destructive: #dc2626;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #0b8f4d;
+  --secondary-foreground: #3e3d3d;
+  --muted: #f7f7f7;
+  --muted-foreground: #676565;
+  --accent: #e6fff3;
+  --accent-foreground: #006b39;
+  --destructive: #e80d14;
+  --border: #bebdbd;
+  --input: #bebdbd;
+  --ring: #008c4b;
 }
- 
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
