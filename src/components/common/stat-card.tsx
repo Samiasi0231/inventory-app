@@ -11,8 +11,6 @@ interface StatCardProps {
   description: string;
   /** Percentage change for the previous period. */
   delta?: number;
-  /** Emphasis for the figure, e.g. red for an overdue amount. */
-  valueClassName?: string;
   className?: string;
 }
 
@@ -22,7 +20,6 @@ export function StatCard({
   value,
   description,
   delta,
-  valueClassName,
   className,
 }: StatCardProps) {
   const isPositive = (delta ?? 0) >= 0;
@@ -42,7 +39,7 @@ export function StatCard({
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <p className={cn("truncate text-2xl font-semibold text-ink-1", valueClassName)}>{value}</p>
+          <p className="truncate text-2xl font-semibold text-ink-1">{value}</p>
           {delta !== undefined && (
             <span
               className={cn(

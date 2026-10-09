@@ -1,5 +1,15 @@
-import { AwaitingDesign } from "@/components/common/awaiting-design";
+import { HistoryIcon } from "lucide-react";
+import { EmptyState } from "@/components/common/empty-state";
 
+/** Placeholder so the sidebar link resolves; the screen is not built yet. */
 export default function Page() {
-  return <AwaitingDesign title="Sales History" reason="designers" />;
+  return (
+    <div className="rounded-xl bg-surface p-5">
+      <EmptyState
+        icon={HistoryIcon}
+        title="Sales History"
+        description="Every completed sale, searchable by date, customer or item. Coming soon."
+      />
+    </div>
+  );
 }
