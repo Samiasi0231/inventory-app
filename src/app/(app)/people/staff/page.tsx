@@ -1,5 +1,13 @@
-import { AwaitingDesign } from "@/components/common/awaiting-design";
+import { Suspense } from "react";
+import StaffPage from "@/screens/staff-page";
 
 export default function Page() {
-  return <AwaitingDesign title="Staff" reason="build" />;
+  return (
+    <Suspense>
+      <StaffPage
+        title="Staff"
+        description="Manage your staff members and their access."
+      />
+    </Suspense>
+  );
 }

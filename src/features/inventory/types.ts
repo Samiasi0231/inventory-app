@@ -108,6 +108,17 @@ export interface AdjustStockPayload {
   notes?: string;
 }
 
+export interface ReorderStockPayload {
+  branchId: ID;
+  productId: ID;
+  supplierId: ID;
+  quantity: number;
+  unit: string;
+  expectedCostPrice: number;
+  expectedDeliveryDate?: ISODateString;
+  notes?: string;
+}
+
 /* -- Add Product wizard ---------------------------------------------------- */
 
 export interface UnitConversion {

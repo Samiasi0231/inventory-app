@@ -33,10 +33,18 @@ export function formatPercentDelta(value: number) {
   return `${sign}${value.toFixed(1)}%`;
 }
 
-export function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-NG", {
+export const formatNaira = (n: number) =>
+  `₦${n.toLocaleString("en-NG")}`;
+
+export const formatDate = (iso: string) =>
+  new Intl.DateTimeFormat("en-NG", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(value));
-}
+  }).format(new Date(iso));
+
+export const formatMonthYear = (iso: string) =>
+  new Intl.DateTimeFormat("en-NG", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(iso));

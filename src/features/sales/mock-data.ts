@@ -91,8 +91,6 @@ function buildInvoice(index: number): Invoice & { cancelled: boolean } {
     number,
     customerId: customer.id,
     customerName: customer.name,
-    // Most invoices are raised against customers; a minority are supplier bills.
-    partyType: index % 4 === 3 ? "supplier" : "customer",
     issueDate: issued.toISOString(),
     dueDate: due.toISOString(),
     lines,

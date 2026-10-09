@@ -1,16 +1,14 @@
 import type { ID, ISODateString, ListParams } from "@/types/shared";
 
-export type InvoiceStatus = "pending" | "partially_paid" | "paid" | "cancelled";
+export type InvoiceStatus = "pending" | "partially_paid" | "paid" | "cancelled" | "completed";
 
 export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
   pending: "Pending",
   partially_paid: "Partially Paid",
   paid: "Paid",
   cancelled: "Cancelled",
+  completed:"Completed"
 };
-
-/** Invoices are raised against either a customer or a supplier. */
-export type PartyType = "customer" | "supplier";
 
 export interface Customer {
   id: ID;
@@ -36,7 +34,6 @@ export interface Invoice {
   number: string;
   customerId: ID;
   customerName: string;
-  partyType: PartyType;
   issueDate: ISODateString;
   dueDate: ISODateString;
   lines: InvoiceLine[];
@@ -62,25 +59,19 @@ export function getBalanceDue(invoice: Pick<Invoice, "total" | "amountPaid">) {
 }
 
 export interface InvoiceSummary {
-  invoiced: number;
-  invoicedDelta: number;
-  invoicedCount: number;
-  paid: number;
-  paidDelta: number;
-  outstanding: number;
-  outstandingDelta: number;
-  /** Shown as a currency figure; the count is the caption beneath it. */
-  overdue: number;
-  overdueDelta: number;
+  totalInvoiced: number;
+  totalInvoicedDelta: number;
+  totalPaid: number;
+  totalPaidDelta: number;
+  balanceDue: number;
+  balanceDueDelta: number;
   overdueCount: number;
+  overdueCountDelta: number;
 }
 
 export interface InvoiceListParams extends ListParams {
   branchId?: ID;
   status?: InvoiceStatus | "all";
-  partyType?: PartyType | "all";
-  issuedFrom?: string;
-  dueBefore?: string;
 }
 
 /* -- Point of sale --------------------------------------------------------- */
@@ -162,4 +153,14 @@ export function calculateCartTotals(
   const vat = taxable * VAT_RATE;
 
   return { subtotal, discount, vat, total: taxable + vat };
+}
+
+
+/** A row in a sales history (customers) or purchase history (suppliers). */
+export interface InvoiceRecord {
+  id: string;
+  date: string; // ISO
+  invoiceNo: string;
+  amount: number;
+  status: InvoiceStatus;
 }

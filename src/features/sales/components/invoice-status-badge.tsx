@@ -3,6 +3,7 @@ import { INVOICE_STATUS_LABELS, type InvoiceStatus } from "../types";
 
 const STATUS_VARIANTS: Record<InvoiceStatus, "success" | "danger" | "warning" | "neutral"> = {
   paid: "success",
+  completed: "success",
   pending: "danger",
   partially_paid: "warning",
   cancelled: "neutral",

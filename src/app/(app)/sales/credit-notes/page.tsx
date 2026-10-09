@@ -1,5 +1,15 @@
-import { AwaitingDesign } from "@/components/common/awaiting-design";
+import { FileMinusIcon } from "lucide-react";
+import { EmptyState } from "@/components/common/empty-state";
 
+/** Placeholder so the sidebar link resolves; the screen is not built yet. */
 export default function Page() {
-  return <AwaitingDesign title="Credit Notes" reason="designers" />;
+  return (
+    <div className="rounded-xl bg-surface p-5">
+      <EmptyState
+        icon={FileMinusIcon}
+        title="Credit Notes"
+        description="Credits raised against cancelled or returned sales. Coming soon."
+      />
+    </div>
+  );
 }

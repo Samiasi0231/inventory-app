@@ -22,6 +22,7 @@ export interface Brand {
 }
 
 /** A physical location that holds stock. */
+/** A physical location that holds stock. */
 export interface Branch {
   id: ID;
   name: string;
@@ -104,3 +105,5 @@ export interface ListParams {
   sortBy?: string;
   sortDirection?: SortDirection;
 }
+
+

@@ -1,7 +1,9 @@
-"use client";
-
+import { Suspense } from "react";
 import InventoryProductsPage from "@/screens/inventory-products-page";
-
 export default function Page() {
-  return <InventoryProductsPage />;
+   return (
+     <Suspense>
+       <InventoryProductsPage />;
+     </Suspense>
+   );
 }
