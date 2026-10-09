@@ -23,7 +23,7 @@ export interface NavItem {
   children?: NavChild[];
 }
 
-/** Sidebar structure. Sections other than Inventory are not built yet. */
+/** Sidebar structure. */
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", icon: LayoutGridIcon, href: "/dashboard" },
   {
@@ -61,10 +61,10 @@ export const NAV_ITEMS: NavItem[] = [
   {
     label: "Activity & Audit",
     icon: FileTextIcon,
-    href: "/activity",
+    href: "/activity/audit-log",
     children: [
-      { label: "Activity Log", href: "/activity/log" },
-      { label: "Audit Trail", href: "/activity/audit" },
+      { label: "Audit Log", href: "/activity/audit-log" },
+      { label: "Activity Feed", href: "/activity/feed" },
     ],
   },
   { label: "Reports", icon: ChartColumnIcon, href: "/reports" },
