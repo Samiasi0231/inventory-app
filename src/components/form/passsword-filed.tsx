@@ -13,8 +13,9 @@ export interface PasswordFieldProps extends Omit<ComponentPropsWithoutRef<"input
  
 export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
   ({ label, id, error, action, children, ...props }, ref) => (
-    <FormField label={label} htmlFor={id} error={error} action={action}>
+    <FormField label={label} htmlFor={id} error={error}>
       <PasswordInput ref={ref} id={id} invalid={!!error} {...props} />
+      {action}
       {children}
     </FormField>
   ),

@@ -1,12 +1,13 @@
 import type { ID, ISODateString, ListParams } from "@/types/shared";
 
-export type InvoiceStatus = "pending" | "partially_paid" | "paid" | "cancelled";
+export type InvoiceStatus = "pending" | "partially_paid" | "paid" | "cancelled" | "completed";
 
 export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
   pending: "Pending",
   partially_paid: "Partially Paid",
   paid: "Paid",
   cancelled: "Cancelled",
+  completed:"Completed"
 };
 
 export interface Customer {
@@ -152,4 +153,14 @@ export function calculateCartTotals(
   const vat = taxable * VAT_RATE;
 
   return { subtotal, discount, vat, total: taxable + vat };
+}
+
+
+/** A row in a sales history (customers) or purchase history (suppliers). */
+export interface InvoiceRecord {
+  id: string;
+  date: string; // ISO
+  invoiceNo: string;
+  amount: number;
+  status: InvoiceStatus;
 }
