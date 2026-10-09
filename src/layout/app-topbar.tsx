@@ -8,22 +8,52 @@ import { NAV_ITEMS } from "@/layout/nav-config";
 import { cn } from "@/lib/utils";
 
 const TOPBAR_ACTION_SLOT_ID = "topbar-action-slot";
+const TOPBAR_CRUMB_SLOT_ID = "topbar-crumb-slot";
 
 const subscribeNoop = () => () => {};
 
-/** Lets a page render its primary action into the shell's topbar. */
-export function TopbarAction({ children }: { children: React.ReactNode }) {
-  // The slot only exists in the DOM, so wait for hydration before portalling.
-  const mounted = useSyncExternalStore(
+function useMounted() {
+  // The slots only exist in the DOM, so wait for hydration before portalling.
+  return useSyncExternalStore(
     subscribeNoop,
     () => true,
     () => false,
   );
+}
 
+/** Lets a page render its primary action into the shell's topbar. */
+export function TopbarAction({ children }: { children: React.ReactNode }) {
+  const mounted = useMounted();
   if (!mounted) return null;
 
   const slot = document.getElementById(TOPBAR_ACTION_SLOT_ID);
   return slot ? createPortal(children, slot) : null;
+}
+
+/**
+ * Replaces the derived breadcrumb, for pages the nav cannot describe on its own
+ * such as a record's detail view.
+ */
+export function TopbarBreadcrumb({
+  section,
+  page,
+}: {
+  section: string;
+  page: string;
+}) {
+  const mounted = useMounted();
+  if (!mounted) return null;
+
+  const slot = document.getElementById(TOPBAR_CRUMB_SLOT_ID);
+  return slot
+    ? createPortal(
+        <>
+          <span className="shrink-0 text-xs tracking-[0.18px] text-ink-3">{section} /</span>
+          <span className="truncate text-base font-semibold text-ink-1">{page}</span>
+        </>,
+        slot,
+      )
+    : null;
 }
 
 /** The parent section plus the current page, e.g. "Inventory / Products". */
@@ -64,9 +94,11 @@ export function AppTopbar({ onOpenSidebar, className }: AppTopbarProps) {
         >
           <MenuIcon className="size-5" />
         </button>
-        <p className="flex min-w-0 items-center gap-1 truncate">
+        {/* An override hides the derived crumb rather than rendering both. */}
+        <span id={TOPBAR_CRUMB_SLOT_ID} className="peer flex min-w-0 items-center gap-1" />
+        <p className="flex min-w-0 items-center gap-1 truncate peer-[:not(:empty)]:hidden">
           {section && (
-            <span className="text-xs tracking-[0.18px] text-ink-3">{section} /</span>
+            <span className="shrink-0 text-xs tracking-[0.18px] text-ink-3">{section} /</span>
           )}
           <span className="truncate text-base font-semibold text-ink-1">{page}</span>
         </p>

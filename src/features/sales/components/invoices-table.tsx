@@ -26,10 +26,11 @@ interface Column {
 }
 
 const COLUMNS: Column[] = [
-  { id: "number", label: "Invoice No", width: "w-[150px]", sortable: true },
-  { id: "issueDate", label: "Issue Date", width: "w-[130px]", sortable: true },
-  { id: "dueDate", label: "Due Date", width: "w-[130px]", sortable: true },
+  { id: "number", label: "Invoices", width: "w-[150px]", sortable: true },
+  { id: "issueDate", label: "Issued", width: "w-[130px]", sortable: true },
+  { id: "dueDate", label: "Due", width: "w-[130px]", sortable: true },
   { id: "customerName", label: "Customer", sortable: true },
+  { id: "partyType", label: "Type", width: "w-[110px]", sortable: true },
   { id: "total", label: "Amount", width: "w-[140px]", sortable: true },
   { id: "balanceDue", label: "Balance", width: "w-[140px]", sortable: true },
   { id: "status", label: "Status", width: "w-[140px]" },
@@ -56,7 +57,7 @@ export function InvoicesTable({
   onAction,
 }: InvoicesTableProps) {
   return (
-    <Table className="min-w-[1000px]">
+    <Table className="min-w-[1120px]">
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {COLUMNS.map((column) => {
@@ -119,6 +120,7 @@ export function InvoicesTable({
                   <TableCell className="max-w-0 truncate" title={invoice.customerName}>
                     {invoice.customerName}
                   </TableCell>
+                  <TableCell className="w-[110px] capitalize">{invoice.partyType}</TableCell>
                   <TableCell className="w-[140px]">{formatCurrency(invoice.total)}</TableCell>
                   <TableCell className="w-[140px]">
                     {balance > 0 ? formatCurrency(balance) : "-"}

@@ -15,6 +15,7 @@ import { FormDialog } from "@/components/common/form-dialog";
 import { StatCard, StatCardSkeleton } from "@/components/common/stat-card";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
+import { useAwaitingDesign } from "@/hooks/use-awaiting-design";
 import { useBranch } from "@/context/branch-context";
 import { BranchSelector } from "@/layout/branch-selector";
 import { TopbarAction } from "@/layout/app-topbar";
@@ -30,7 +31,7 @@ import {
 } from "@/features/inventory/components/inventory-filters";
 import { ProductsTable } from "@/features/inventory/components/products-table";
 import type { RowAction } from "@/features/inventory/components/product-row-actions";
-import { ReorderStockDialog } from "@/features/inventory/components/reorder-stock-dialog";
+import { CreatePurchaseOrderDialog } from "@/features/purchasing/components/create-purchase-order-dialog";
 import { TransferStockDialog } from "@/features/inventory/components/transfer-stock-dialog";
 import { inventoryService } from "@/features/inventory/inventory.service";
 import type { InventoryItem } from "@/features/inventory/types";
@@ -52,6 +53,7 @@ export default function InventoryProductsPage({
 }: InventoryProductsPageProps) {
   const { activeBranch } = useBranch();
   const toast = useToast();
+  const awaitingDesign = useAwaitingDesign();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 350);
@@ -102,11 +104,7 @@ export default function InventoryProductsPage({
   function handleRowAction(action: RowAction, item: InventoryItem) {
     setActiveItem(item);
     if (action === "view") {
-      toast.add({
-        type: "info",
-        title: item.name,
-        description: `${item.itemCode} • ${formatNumber(item.totalStock)} ${item.baseUnit.toLowerCase()}s in ${activeBranch.name}`,
-      });
+      awaitingDesign("The product detail page");
       return;
     }
     setDialogKey((key) => key + 1);
@@ -305,12 +303,15 @@ export default function InventoryProductsPage({
             onOpenChange={(open) => setDialog(open ? "adjust" : null)}
             onSuccess={handleMutationSuccess}
           />
-          <ReorderStockDialog
+          <CreatePurchaseOrderDialog
             key={`reorder-${dialogKey}`}
-            item={activeItem}
+            seedLine={{
+              productName: activeItem.name,
+              unitCost: activeItem.costPrice,
+              quantity: Math.max(1, activeItem.reorderPoint - activeItem.totalStock),
+            }}
             open={dialog === "reorder"}
             onOpenChange={(open) => setDialog(open ? "reorder" : null)}
-            onSuccess={handleMutationSuccess}
           />
         </>
       )}
