@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/components/ui/toast";
+import { useAwaitingDesign } from "@/hooks/use-awaiting-design";
 import { useBranch } from "@/context/branch-context";
 import { TopbarAction, TopbarBreadcrumb } from "@/layout/app-topbar";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
@@ -36,7 +36,6 @@ import {
   getPurchasePaymentStatus,
   PURCHASE_PAYMENT_LABELS,
   PURCHASE_STATUS_LABELS,
-  type PurchaseOrder,
   type PurchaseOrderStatus,
 } from "@/features/purchasing/types";
 
@@ -62,7 +61,7 @@ const STATUS_VARIANTS: Record<PurchaseOrderStatus, "success" | "danger" | "warni
 export default function PurchaseOrderDetailPage({ orderId }: { orderId: string }) {
   const router = useRouter();
   const { branches } = useBranch();
-  const toast = useToast();
+  const awaitingDesign = useAwaitingDesign();
 
   const [tab, setTab] = useState<TabId>("overview");
   const [dialog, setDialog] = useState<"receive" | "payment" | "return" | "invoice" | null>(null);
@@ -160,13 +159,7 @@ export default function PurchaseOrderDetailPage({ orderId }: { orderId: string }
           <SecondaryButton
             className="h-10"
             leftIcon={<PencilIcon className="size-4" />}
-            onClick={() =>
-              toast.add({
-                type: "info",
-                title: "Edit order",
-                description: "screen pending completion.",
-              })
-            }
+            onClick={() => awaitingDesign("Editing a purchase order")}
           >
             Edit Order
           </SecondaryButton>

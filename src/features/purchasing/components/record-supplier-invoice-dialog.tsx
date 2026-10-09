@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { z } from "zod";
@@ -10,18 +10,17 @@ import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { Field, SelectInput, TextInput, TextareaInput } from "@/components/form/app-fields";
 import { Stepper } from "@/components/ui/stepper";
 import { useToast } from "@/components/ui/toast";
-import { formatCurrency } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { MOCK_SUPPLIERS } from "@/features/inventory/mock-data";
 import { purchasingService } from "../purchasing.service";
 import type { PurchaseOrder } from "../types";
+import { GrandTotalBar, ReviewCard, ReviewRow, formatReviewDate } from "./review";
 
 const CREATED_BY_OPTIONS = ["Inventory Manager", "Branch Manager", "Owner"];
 
-const INVOICE_TYPES = [
-  { value: "supplier_invoice", label: "Supplier Invoice" },
-  { value: "proforma", label: "Proforma Invoice" },
-  { value: "credit_note", label: "Credit Note" },
-];
+const INVOICE_TYPES = [{ value: "supplier_invoice", label: "Supplier Invoice" }];
+
+const TAX_LABEL = "Standard VAT 7.5%";
 
 const STEPS = [
   { id: "details", label: "Invoice Details" },
@@ -34,18 +33,32 @@ const schema = z.object({
   createdBy: z.string().min(1, "Select who is raising this"),
   invoiceType: z.string().min(1, "Select an invoice type"),
   supplierId: z.string().min(1, "Select a supplier"),
-  issueDate: z.string().min(1, "Pick an issue date"),
-  dueDate: z.string().min(1, "Pick a due date"),
+  issueDate: z.string().optional(),
+  dueDate: z.string().optional(),
   notes: z.string().optional(),
+  lines: z.array(
+    z.object({
+      productId: z.string(),
+      productName: z.string(),
+      variant: z.string(),
+      unit: z.string(),
+      ordered: z.number(),
+      invoiceQty: z.coerce.number().min(0, "Cannot be negative"),
+      unitCost: z.coerce.number().min(0, "Cannot be negative"),
+    }),
+  ),
 });
 
 type InvoiceValues = z.input<typeof schema>;
 
 const STEP_FIELDS: (keyof InvoiceValues)[][] = [
-  ["billedTo", "createdBy", "invoiceType", "supplierId", "issueDate", "dueDate"],
-  [],
+  ["billedTo", "createdBy", "invoiceType", "supplierId"],
+  ["lines"],
   [],
 ];
+
+const lineTotal = (line: { invoiceQty?: unknown; unitCost?: unknown }) =>
+  Number(line.invoiceQty || 0) * Number(line.unitCost || 0);
 
 interface RecordSupplierInvoiceDialogProps {
   order: PurchaseOrder;
@@ -67,14 +80,24 @@ export function RecordSupplierInvoiceDialog({
     billedTo: "Funke Adeleke",
     createdBy: CREATED_BY_OPTIONS[0],
     invoiceType: INVOICE_TYPES[0].value,
-    supplierId: order.supplierId,
+    supplierId: "",
     issueDate: "",
     dueDate: "",
     notes: "",
+    lines: order.lines.map((line) => ({
+      productId: line.productId,
+      productName: line.productName,
+      variant: line.variant,
+      unit: line.unit,
+      ordered: line.ordered,
+      invoiceQty: line.ordered,
+      unitCost: line.unitCost,
+    })),
   };
 
   const {
     register,
+    control,
     handleSubmit,
     trigger,
     reset,
@@ -85,6 +108,10 @@ export function RecordSupplierInvoiceDialog({
     defaultValues: defaults,
     mode: "onTouched",
   });
+
+  const { fields } = useFieldArray({ control, name: "lines" });
+  const lines = watch("lines") ?? [];
+  const total = lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
   /** Clear the wizard on close so the next one starts from a blank form. */
   function handleOpenChange(nextOpen: boolean) {
@@ -99,15 +126,27 @@ export function RecordSupplierInvoiceDialog({
     const fields = STEP_FIELDS[stepIndex];
     const valid = fields.length === 0 || (await trigger(fields));
     if (!valid) return;
+
+    if (stepIndex === 1 && !lines.some((line) => Number(line.invoiceQty) > 0)) {
+      toast.add({
+        type: "error",
+        title: "Nothing to invoice",
+        description: "Enter an invoice quantity for at least one line.",
+      });
+      return;
+    }
+
     setStepIndex((index) => Math.min(index + 1, STEPS.length - 1));
   }
 
   const isLastStep = stepIndex === STEPS.length - 1;
-  const linesTotal = order.lines.reduce((sum, line) => sum + line.ordered * line.unitCost, 0);
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      const { reference } = await purchasingService.recordSupplierInvoice(order.id, { ...values });
+      const { reference } = await purchasingService.recordSupplierInvoice(order.id, {
+        ...values,
+        total,
+      });
       toast.add({
         type: "success",
         title: "Supplier invoice recorded",
@@ -123,6 +162,11 @@ export function RecordSupplierInvoiceDialog({
       });
     }
   });
+
+  const supplierName =
+    MOCK_SUPPLIERS.find((supplier) => supplier.id === watch("supplierId"))?.name ?? "—";
+  const invoiceTypeLabel =
+    INVOICE_TYPES.find((type) => type.value === watch("invoiceType"))?.label ?? "—";
 
   return (
     <FormDialog
@@ -165,12 +209,8 @@ export function RecordSupplierInvoiceDialog({
           {stepIndex === 0 && (
             <div className="flex flex-col gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Billed To" htmlFor="billedTo" required error={errors.billedTo?.message}>
-                  <TextInput
-                    id="billedTo"
-                    invalid={!!errors.billedTo}
-                    {...register("billedTo")}
-                  />
+                <Field label="Billed To" htmlFor="billedTo" error={errors.billedTo?.message}>
+                  <TextInput id="billedTo" invalid={!!errors.billedTo} {...register("billedTo")} />
                 </Field>
 
                 <Field label="Created by" htmlFor="inv-createdBy" error={errors.createdBy?.message}>
@@ -183,12 +223,7 @@ export function RecordSupplierInvoiceDialog({
                   </SelectInput>
                 </Field>
 
-                <Field
-                  label="Invoice Type"
-                  htmlFor="invoiceType"
-                  required
-                  error={errors.invoiceType?.message}
-                >
+                <Field label="Invoice Type" htmlFor="invoiceType" error={errors.invoiceType?.message}>
                   <SelectInput id="invoiceType" {...register("invoiceType")}>
                     {INVOICE_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -198,12 +233,7 @@ export function RecordSupplierInvoiceDialog({
                   </SelectInput>
                 </Field>
 
-                <Field
-                  label="Supplier"
-                  htmlFor="inv-supplier"
-                  required
-                  error={errors.supplierId?.message}
-                >
+                <Field label="Supplier" htmlFor="inv-supplier" error={errors.supplierId?.message}>
                   <SelectInput
                     id="inv-supplier"
                     invalid={!!errors.supplierId}
@@ -218,22 +248,12 @@ export function RecordSupplierInvoiceDialog({
                   </SelectInput>
                 </Field>
 
-                <Field label="Issue Date" htmlFor="issueDate" required error={errors.issueDate?.message}>
-                  <TextInput
-                    id="issueDate"
-                    type="date"
-                    invalid={!!errors.issueDate}
-                    {...register("issueDate")}
-                  />
+                <Field label="Issue Date" htmlFor="issueDate">
+                  <TextInput id="issueDate" type="date" {...register("issueDate")} />
                 </Field>
 
-                <Field label="Due Date" htmlFor="dueDate" required error={errors.dueDate?.message}>
-                  <TextInput
-                    id="dueDate"
-                    type="date"
-                    invalid={!!errors.dueDate}
-                    {...register("dueDate")}
-                  />
+                <Field label="Due Date" htmlFor="dueDate">
+                  <TextInput id="dueDate" type="date" {...register("dueDate")} />
                 </Field>
               </div>
 
@@ -248,70 +268,110 @@ export function RecordSupplierInvoiceDialog({
           )}
 
           {stepIndex === 1 && (
-            <div className="flex flex-col gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-ink-1">Products</h3>
-                <p className="mt-0.5 text-xs text-ink-3">
-                  Lines carried over from {order.purchaseId}.
-                </p>
-              </div>
-
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <div className="grid min-w-[620px] grid-cols-[1.2fr_1fr_0.7fr_0.7fr_1fr] gap-3 bg-surface-muted px-4 py-3 text-xs font-semibold text-ink-1">
+            <div className="flex flex-col gap-4">
+              <div className="overflow-x-auto rounded-lg border border-border/70">
+                <div className="grid min-w-[760px] grid-cols-[1.2fr_1.1fr_0.7fr_0.8fr_1fr_1.1fr_1.1fr] gap-3 bg-surface-muted px-4 py-3 text-[11px] font-semibold text-ink-1">
                   <span>Product</span>
                   <span>Variant</span>
-                  <span>Ordered</span>
                   <span>Unit</span>
-                  <span>Unit Cost</span>
+                  <span>Ordered</span>
+                  <span>Invoice Qty</span>
+                  <span>Unit Cost (₦)</span>
+                  <span>Total (₦)</span>
                 </div>
-                {order.lines.map((line) => (
+
+                {fields.map((field, index) => (
                   <div
-                    key={`${line.productId}-${line.variant}`}
-                    className="grid min-w-[620px] grid-cols-[1.2fr_1fr_0.7fr_0.7fr_1fr] gap-3 border-t border-border/60 px-4 py-3 text-xs text-ink-2"
+                    key={field.id}
+                    className="grid min-w-[760px] grid-cols-[1.2fr_1.1fr_0.7fr_0.8fr_1fr_1.1fr_1.1fr] items-center gap-3 border-t border-border/50 px-4 py-2.5 text-xs text-ink-2"
                   >
-                    <span className="truncate">{line.productName}</span>
-                    <span className="truncate">{line.variant}</span>
-                    <span>{line.ordered}</span>
-                    <span>{line.unit}</span>
-                    <span>{formatCurrency(line.unitCost)}</span>
+                    <span className="truncate">{field.productName}</span>
+                    <span className="truncate">{field.variant}</span>
+                    <span>{field.unit}</span>
+                    <span>{field.ordered}</span>
+                    <TextInput
+                      aria-label={`Invoice quantity for ${field.variant}`}
+                      type="number"
+                      min={0}
+                      className="h-9 text-xs"
+                      invalid={!!errors.lines?.[index]?.invoiceQty}
+                      {...register(`lines.${index}.invoiceQty`)}
+                    />
+                    <TextInput
+                      aria-label={`Unit cost for ${field.variant}`}
+                      type="number"
+                      min={0}
+                      className="h-9 text-xs"
+                      invalid={!!errors.lines?.[index]?.unitCost}
+                      {...register(`lines.${index}.unitCost`)}
+                    />
+                    <TextInput
+                      aria-label={`Total for ${field.variant}`}
+                      readOnly
+                      tabIndex={-1}
+                      className="h-9 text-xs"
+                      value={formatNumber(lineTotal(lines[index] ?? {}))}
+                    />
                   </div>
                 ))}
               </div>
+
+              <dl className="flex flex-col gap-3 border-t border-border/60 pt-4 text-xs">
+                <SummaryRow label="Tax" value={TAX_LABEL} />
+                <SummaryRow label="Discounts" value="₦0" />
+                <SummaryRow label="TOTAL" value={`₦${formatNumber(total)}`} />
+              </dl>
             </div>
           )}
 
           {stepIndex === 2 && (
-            <section className="rounded-xl border border-border/70 p-5">
-              <h3 className="mb-4 text-sm font-semibold text-ink-1">Invoice Details</h3>
-              <dl className="grid gap-x-6 sm:grid-cols-2">
-                <ReviewRow label="Purchase Order" value={order.purchaseId} />
-                <ReviewRow label="Billed To" value={watch("billedTo")} />
-                <ReviewRow label="Created by" value={watch("createdBy")} />
+            <div className="flex flex-col gap-5">
+              <ReviewCard title="Invoice Details">
+                <ReviewRow label="Billed To:" value={watch("billedTo") || "Not provided"} />
+                <ReviewRow label="Created by:" value={watch("createdBy")} />
+                <ReviewRow label="Invoice Type:" value={invoiceTypeLabel} />
+                <ReviewRow label="Supplier:" value={supplierName} />
                 <ReviewRow
-                  label="Invoice Type"
-                  value={
-                    INVOICE_TYPES.find((type) => type.value === watch("invoiceType"))?.label ?? "—"
-                  }
+                  label="Issue Date:"
+                  value={formatReviewDate(watch("issueDate"), "Not provided")}
                 />
                 <ReviewRow
-                  label="Supplier"
-                  value={
-                    MOCK_SUPPLIERS.find((supplier) => supplier.id === watch("supplierId"))?.name ??
-                    "—"
-                  }
+                  label="Due Date:"
+                  value={formatReviewDate(watch("dueDate"), "Not provided")}
                 />
-                <ReviewRow label="Issue Date" value={watch("issueDate") || "—"} />
-                <ReviewRow label="Due Date" value={watch("dueDate") || "—"} />
-                <ReviewRow label="Notes" value={watch("notes") || "—"} />
-              </dl>
+                <ReviewRow label="Note:" value={watch("notes") || "Not provided"} wrap />
+              </ReviewCard>
 
-              <div className="mt-4 flex items-center justify-between border-t border-dashed border-border pt-3">
-                <span className="text-sm font-semibold text-ink-1">Invoice total</span>
-                <span className="text-lg font-semibold text-ink-1">
-                  {formatCurrency(linesTotal)}
-                </span>
-              </div>
-            </section>
+              <ReviewCard title="Products">
+                <div className="overflow-x-auto rounded-lg border border-border/70">
+                  <div className="grid min-w-[620px] grid-cols-[1.2fr_1.1fr_0.7fr_0.8fr_0.9fr_1fr_1fr] gap-3 bg-surface-muted px-4 py-3 text-[11px] font-semibold text-ink-1">
+                    <span>Product</span>
+                    <span>Variant</span>
+                    <span>Unit</span>
+                    <span>Ordered</span>
+                    <span>Invoice Qty</span>
+                    <span>Unit Cost (₦)</span>
+                    <span>Total (₦)</span>
+                  </div>
+                  {lines.map((line, index) => (
+                    <div
+                      key={index}
+                      className="grid min-w-[620px] grid-cols-[1.2fr_1.1fr_0.7fr_0.8fr_0.9fr_1fr_1fr] gap-3 border-t border-border/50 px-4 py-3 text-xs text-ink-2"
+                    >
+                      <span className="truncate">{line.productName}</span>
+                      <span className="truncate">{line.variant}</span>
+                      <span>{line.unit}</span>
+                      <span>{line.ordered}</span>
+                      <span>{String(line.invoiceQty)}</span>
+                      <span>{formatNumber(Number(line.unitCost) || 0)}</span>
+                      <span>{formatNumber(lineTotal(line))}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <GrandTotalBar amount={total} />
+              </ReviewCard>
+            </div>
           )}
         </form>
       </div>
@@ -319,11 +379,11 @@ export function RecordSupplierInvoiceDialog({
   );
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
+function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] gap-3 py-1.5">
-      <dt className="text-xs text-ink-3">{label}</dt>
-      <dd className="min-w-0 text-xs break-words text-ink-1">{value}</dd>
+    <div className="flex items-center justify-between">
+      <dt className="text-ink-3">{label}</dt>
+      <dd className="text-ink-1">{value}</dd>
     </div>
   );
 }

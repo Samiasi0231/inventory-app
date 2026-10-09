@@ -15,6 +15,7 @@ import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { MOCK_INVENTORY_RECORDS, MOCK_SUPPLIERS } from "@/features/inventory/mock-data";
 import { purchasingService } from "../purchasing.service";
+import { GrandTotalBar, ReviewCard, ReviewRow, formatReviewDate } from "./review";
 import { DELIVERY_METHODS, PURCHASE_UNITS, PRODUCT_VARIANTS } from "../types";
 
 const CREATED_BY_OPTIONS = ["Inventory Manager", "Branch Manager", "Owner"];
@@ -86,7 +87,7 @@ const blankLine = {
   unitCost: 0,
 };
 
-/** Borderless until hovered or focused, as the Products table is drawn. */
+/** Borderless until hovered or focused. */
 const inlineControl =
   "h-9 border-transparent bg-transparent px-2 text-xs hover:border-border focus-visible:border-primary";
 
@@ -531,43 +532,12 @@ export function CreatePurchaseOrderDialog({
                   ))}
                 </div>
 
-                <div className="mt-4 flex items-center justify-between rounded-lg bg-accent px-4 py-3 text-accent-foreground">
-                  <span className="text-xs font-semibold">Grand Total</span>
-                  <span className="text-sm font-semibold">₦{formatNumber(grandTotal)}</span>
-                </div>
+                <GrandTotalBar amount={grandTotal} />
               </ReviewCard>
             </div>
           )}
         </form>
       </div>
     </FormDialog>
-  );
-}
-
-function formatReviewDate(value: string) {
-  if (!value) return "—";
-  return new Intl.DateTimeFormat("en-NG", { day: "2-digit", month: "short", year: "numeric" }).format(
-    new Date(value),
-  );
-}
-
-function ReviewCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-xl border border-border/70 p-5 shadow-[0_1px_0_0_rgba(0,0,0,0.06)]">
-      <h3 className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-ink-1">
-        <span aria-hidden className="size-1 rounded-full bg-ink-1" />
-        {title}
-      </h3>
-      {children}
-    </section>
-  );
-}
-
-function ReviewRow({ label, value, wrap }: { label: string; value: string; wrap?: boolean }) {
-  return (
-    <div className="flex items-start justify-between gap-6 py-1.5 text-[13px]">
-      <dt className="shrink-0 text-ink-3">{label}</dt>
-      <dd className={cn("text-right text-ink-2", wrap ? "max-w-[260px]" : "")}>{value}</dd>
-    </div>
   );
 }
