@@ -8,7 +8,6 @@ import { useSlideRotation } from "@/hooks/use-slide-rotation";
 
 interface AuthLayoutProps {
   slides: AuthSlide[];
-  /** Milliseconds between slides. */
   interval?: number;
   children: ReactNode;
 }

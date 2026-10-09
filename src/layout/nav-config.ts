@@ -73,6 +73,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/people",
     children: [
       { label: "Staff", href: "/people/staff", icon: UsersIcon },
+      { label: "Customers", href: "/people/customers", icon: UsersIcon },
       { label: "Suppliers", href: "/people/suppliers", icon: TruckIcon },
     ],
   },
