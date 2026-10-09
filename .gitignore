@@ -32,5 +32,3 @@ node_modules/
 # TypeScript incremental build info
 tsconfig.tsbuildinfo
 
-# Local Figma section exports (not committed)
-.design-refs/

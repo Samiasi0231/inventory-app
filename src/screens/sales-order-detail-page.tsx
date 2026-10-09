@@ -7,7 +7,7 @@ import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/toast";
+import { useAwaitingDesign } from "@/hooks/use-awaiting-design";
 import { useBranch } from "@/context/branch-context";
 import { TopbarAction, TopbarBreadcrumb } from "@/layout/app-topbar";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -53,7 +53,7 @@ export default function SalesOrderDetailPage({
 }: SalesOrderDetailPageProps) {
   const router = useRouter();
   const { branches } = useBranch();
-  const toast = useToast();
+  const awaitingDesign = useAwaitingDesign();
 
   const [tab, setTab] = useState<TabId>(
     TABS.some((entry) => entry.id === initialTab) ? (initialTab as TabId) : "overview",
@@ -208,13 +208,7 @@ export default function SalesOrderDetailPage({
           action={
             <PrimaryButton
               disabled={balance <= 0}
-              onClick={() =>
-                toast.add({
-                  type: "info",
-                  title: "Record payment",
-                  description: "Payments against a sales order are recorded on its invoice.",
-                })
-              }
+              onClick={() => awaitingDesign("Recording a payment on a sales order")}
             >
               Record payment
             </PrimaryButton>

@@ -15,6 +15,7 @@ import { FormDialog } from "@/components/common/form-dialog";
 import { StatCard, StatCardSkeleton } from "@/components/common/stat-card";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
+import { useAwaitingDesign } from "@/hooks/use-awaiting-design";
 import { useBranch } from "@/context/branch-context";
 import { BranchSelector } from "@/layout/branch-selector";
 import { TopbarAction } from "@/layout/app-topbar";
@@ -52,6 +53,7 @@ export default function InventoryProductsPage({
 }: InventoryProductsPageProps) {
   const { activeBranch } = useBranch();
   const toast = useToast();
+  const awaitingDesign = useAwaitingDesign();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 350);
@@ -102,11 +104,7 @@ export default function InventoryProductsPage({
   function handleRowAction(action: RowAction, item: InventoryItem) {
     setActiveItem(item);
     if (action === "view") {
-      toast.add({
-        type: "info",
-        title: item.name,
-        description: `${item.itemCode} • ${formatNumber(item.totalStock)} ${item.baseUnit.toLowerCase()}s in ${activeBranch.name}`,
-      });
+      awaitingDesign("The product detail page");
       return;
     }
     setDialogKey((key) => key + 1);
