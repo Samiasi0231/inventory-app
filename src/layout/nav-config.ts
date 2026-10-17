@@ -33,7 +33,7 @@ export interface NavItem {
 
 /** Sidebar structure. Sections other than Inventory are not built yet. */
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", icon: LayoutGridIcon, href: "/dashboard" },
+  { label: "Dashboard", icon: LayoutGridIcon, href: "/inventory/products" },
   {
     label: "Inventory",
     icon: PackageIcon,

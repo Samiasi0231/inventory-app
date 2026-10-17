@@ -4,13 +4,51 @@ export interface Country {
   currency: string;
   regions: string[];
 }
- 
+
 export const countries: Country[] = [
   {
     code: "NG",
     name: "Nigeria",
     currency: "NGN",
-    regions: ["Lagos", "Abuja (FCT)", "Rivers", "Oyo", "Kano", "Kaduna", "Enugu", "Ogun", "Delta", "Anambra"],
+    regions: [
+      "Abia",
+      "Adamawa",
+      "Akwa Ibom",
+      "Anambra",
+      "Bauchi",
+      "Bayelsa",
+      "Benue",
+      "Borno",
+      "Cross River",
+      "Delta",
+      "Ebonyi",
+      "Edo",
+      "Ekiti",
+      "Enugu",
+      "F.C.T (Abuja)",
+      "Gombe",
+      "Imo",
+      "Jigawa",
+      "Kaduna",
+      "Kano",
+      "Katsina",
+      "Kebbi",
+      "Kogi",
+      "Kwara",
+      "Lagos",
+      "Nasarawa",
+      "Niger",
+      "Ogun",
+      "Ondo",
+      "Osun",
+      "Oyo",
+      "Plateau",
+      "Rivers",
+      "Sokoto",
+      "Taraba",
+      "Yobe",
+      "Zamfara",
+    ],
   },
   {
     code: "NL",
@@ -55,7 +93,7 @@ export const countries: Country[] = [
     regions: ["Ontario", "Quebec", "British Columbia", "Alberta"],
   },
 ];
- 
+
 export const currencies = [
   { code: "NGN", label: "NGN — Nigerian Naira" },
   { code: "USD", label: "USD — US Dollar" },
@@ -66,5 +104,5 @@ export const currencies = [
   { code: "ZAR", label: "ZAR — South African Rand" },
   { code: "CAD", label: "CAD — Canadian Dollar" },
 ];
- 
+
 export const staffRanges = ["0-10", "11-20", "21-50", "51-100", "100 and above"];

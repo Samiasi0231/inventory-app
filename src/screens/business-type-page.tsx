@@ -1,7 +1,7 @@
 "use client";
-
+ 
 import { useRouter } from "next/navigation";
-import { BusinessTypePicker, OnboardingHeader, StepFooter } from "@/components/onboarding";
+import { BusinessTypePicker, OnboardingCard, StepFooter } from "@/components/onboarding";
 import { useOnboarding } from "@/context/onboarding-context";
  
 export default function BusinessTypePage() {
@@ -9,16 +9,18 @@ export default function BusinessTypePage() {
   const { businessType, setBusinessType } = useOnboarding();
  
   return (
-    <section>
-      <OnboardingHeader
-        title="What kind of business do you run?"
-        description="This helps us tailor your workspace to meet your business needs"
-      />
+    <OnboardingCard
+      step={1}
+      totalSteps={2}
+      title="What kind of business do you run?"
+      description="Tell us a little about your business so we can tailor RIINOX to your needs"
+    >
       <BusinessTypePicker value={businessType} onChange={setBusinessType} />
       <StepFooter
+        onBack={() => router.back()}
         nextDisabled={!businessType}
         onNext={() => router.push("/onboarding/business-details")}
       />
-    </section>
+    </OnboardingCard>
   );
 }
