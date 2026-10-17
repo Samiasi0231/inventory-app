@@ -86,3 +86,34 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+
+/* riinox-autofill: match Chrome autofilled inputs to Riinox branding */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #2f2f2f;
+  caret-color: #2f2f2f;
+
+  /* Replace Chrome's autofill background with brand mint */
+  -webkit-box-shadow: 0 0 0 1000px #e6fff3 inset;
+  box-shadow: 0 0 0 1000px #e6fff3 inset;
+
+  /* Riinox brand green */
+  border-color: #008c4b;
+
+  /* Reduce Chrome's blue background transition */
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Standard autofill selector */
+input:autofill,
+input:autofill:hover,
+input:autofill:focus {
+  -webkit-text-fill-color: #2f2f2f;
+  caret-color: #2f2f2f;
+  box-shadow: 0 0 0 1000px #e6fff3 inset;
+  border-color: #008c4b;
+}
+

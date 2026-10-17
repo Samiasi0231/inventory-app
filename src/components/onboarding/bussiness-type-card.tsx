@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import type { BusinessType } from "@/features/onboarding/bussiness-types";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
  
 interface BusinessTypeCardProps {
   type: BusinessType;
@@ -27,7 +28,7 @@ export function BusinessTypeCard({ type, selected, onSelect }: BusinessTypeCardP
         </span>
       )}
       <span className="grid size-9 place-items-center rounded-lg border border-neutral-200 bg-white text-brand-500">
-        <type.icon className="size-4" aria-hidden />
+        <Image width={20} height={20} src={type.image} alt={type.title} className="size-4" />
       </span>
       <span className="mt-1 text-sm font-semibold text-neutral-800">{type.title}</span>
       <span className="text-xs leading-relaxed text-neutral-600">{type.description}</span>

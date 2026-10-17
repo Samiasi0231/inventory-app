@@ -1,14 +1,22 @@
+
+import Image from "next/image";
 import { cn } from "@/lib/utils";
- 
+import logo from "@/assets/images/riin-logo.svg.svg";
+
 export function Logo({ className }: { className?: string }) {
   return (
-    <div className={cn("flex flex-col gap-1", className)} aria-label="Riinox">
-      <div className="flex gap-1" aria-hidden>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <span key={i} className="size-1 rounded-full bg-brand-500" />
-        ))}
-      </div>
-      <span className="text-sm font-bold tracking-wide text-brand-500">RIINOX</span>
+    <div
+      className={cn("flex flex-col items-start gap-0.5", className)}
+      aria-label="Riinox"
+    >
+      <Image
+        src={logo}
+        alt="Riinox"
+        width={32}
+        height={32}
+        className="size-7 object-contain"
+        priority
+      />
     </div>
   );
 }

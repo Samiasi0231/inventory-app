@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -16,6 +15,7 @@ export function SignUpForm() {
   const { setEmail } = useOnboarding();
   const [serverError, setServerError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showRules, setShowRules] = useState(false);
  
   const {
     register,
@@ -29,6 +29,7 @@ export function SignUpForm() {
   });
  
   const password = watch("password") ?? "";
+  const passwordField = register("password");
  
   const onSubmit = async (values: SignUpValues) => {
     setServerError(null);
@@ -72,9 +73,15 @@ export function SignUpForm() {
         label="Password"
         autoComplete="new-password"
         placeholder="Enter password"
-        {...register("password")}
+        aria-describedby="password-requirements"
+        {...passwordField}
+        onFocus={() => setShowRules(true)}
+        onBlur={(event) => {
+          passwordField.onBlur(event);
+          setShowRules(false);
+        }}
       >
-        <PasswordRequirements password={password} />
+        <PasswordRequirements id="password-requirements" password={password} open={showRules} />
       </PasswordField>
  
       <PasswordField

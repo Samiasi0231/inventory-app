@@ -9,7 +9,7 @@ export default function WelcomeBackPage() {
   const router = useRouter();
  
   useEffect(() => {
-    const id = window.setTimeout(() => router.replace("/dashboard"), 2000);
+    const id = window.setTimeout(() => router.replace("/inventory"));
     return () => window.clearTimeout(id);
   }, [router]);
  
