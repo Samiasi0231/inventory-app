@@ -1,5 +1,5 @@
-import ApprovalRulesPage from "@/screens/settings/approval-rules-page";
+import ApprovalRules from "@/app/settings/_components/ApprovalRules";
 
-export default function Page() {
-  return <ApprovalRulesPage />;
+export default function ApprovalRulesPage() {
+  return <ApprovalRules />;
 }
