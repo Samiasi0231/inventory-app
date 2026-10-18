@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import SuppliersPage from "@/screens/suppliers-page";
+import SuppliersPage from "@/screens/supply/suppliers-page";
 
 export default function Page() {
   

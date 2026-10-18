@@ -1,6 +1,6 @@
 "use client";
 
-import PasswordChangedPage from "@/screens/password-changed-page";
+import PasswordChangedPage from "@/screens/auth/password-changed-page";
 
 export default function Page() {
   return <PasswordChangedPage />;

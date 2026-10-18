@@ -1,6 +1,6 @@
 "use client";
 
-import BusinessDetailsPage from "@/screens/busineess-details-page";
+import BusinessDetailsPage from "@/screens/business/busineess-details-page";
 
 export default function Page() {
   return <BusinessDetailsPage />;

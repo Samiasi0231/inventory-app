@@ -1,5 +1,6 @@
 import { AuthFooterLink, AuthHeading } from "@/components/auth";
 import { SignUpForm } from "@/features/auth/sign-up-form";
+import { AppShell } from "@/layout/app-shell";
  
 export default function SignUpPage() {
   return (
