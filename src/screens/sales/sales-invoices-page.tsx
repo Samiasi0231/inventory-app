@@ -311,7 +311,6 @@ export default function SalesInvoicesPage() {
             ? `${activeInvoice.number} will be voided and can no longer be paid.`
             : undefined
         }
-        className="sm:max-w-[440px]"
         footer={
           <>
             <SecondaryButton onClick={() => setDialog(null)} disabled={cancelling}>

@@ -1,15 +1,5 @@
-import { FileTextIcon } from "lucide-react";
-import { EmptyState } from "@/components/common/empty-state";
+import PurchaseOrdersPage from "@/screens/purchasing/purchase-orders-page";
 
-/** Placeholder so the sidebar link resolves; the screen is not built yet. */
 export default function Page() {
-  return (
-    <div className="rounded-xl bg-surface p-5">
-      <EmptyState
-        icon={FileTextIcon}
-        title="Purchase Orders"
-        description="Orders raised with your suppliers. Coming soon."
-      />
-    </div>
-  );
+  return <PurchaseOrdersPage />;
 }
