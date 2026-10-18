@@ -212,17 +212,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <main className="min-h-screen w-full bg-[#f7f7f7] text-[#343434]">
-      {/* Page heading */}
-      <header className="border-b border-[#eeeeee] bg-white px-5 py-[14px] sm:px-7">
-        <h1 className="text-[15px] font-semibold leading-5 text-[#282828]">
-          Notifications
-        </h1>
-        <p className="mt-1 text-[10px] leading-4 text-[#929292]">
-          Manage how you and your team receive alerts for key events.
-        </p>
-      </header>
-
+    <div className="min-h-screen w-full bg-[#f7f7f7] text-[#343434]">
       {/* Settings content */}
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-[14px] p-4 sm:p-5 lg:px-7">
         {sections.map((section) => (
@@ -293,6 +283,6 @@ export default function NotificationsPage() {
           </section>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
