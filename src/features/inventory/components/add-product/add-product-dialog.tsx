@@ -139,7 +139,6 @@ export function AddProductDialog({ open, onOpenChange, onSuccess }: AddProductDi
       onOpenChange={handleOpenChange}
       title="Add Product"
       description="Manage your products and track stock across your branches."
-      className="sm:max-w-[950px]"
       footer={
         <>
           <SecondaryButton

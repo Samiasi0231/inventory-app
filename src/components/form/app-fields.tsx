@@ -96,7 +96,7 @@ export const SelectInput = forwardRef<
       aria-invalid={invalid || undefined}
       className={cn(
         controlClass,
-        "appearance-none pr-10",
+        "appearance-none pr-10 has-[option[value='']:checked]:text-ink-4",
         invalid && controlErrorClass,
         className,
       )}

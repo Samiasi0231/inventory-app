@@ -50,9 +50,9 @@ export function Stepper({ steps, currentIndex, onStepSelect, className }: Steppe
               </span>
               <span
                 className={cn(
-                  "truncate text-sm tracking-[0.14px] transition-colors",
+                  "truncate text-xs tracking-[0.18px] transition-colors",
                   isCurrent && "font-semibold text-primary",
-                  isComplete && "font-medium text-ink-2",
+                  isComplete && "font-medium text-primary",
                   !isComplete && !isCurrent && "text-ink-4"
                 )}
               >
