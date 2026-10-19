@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -33,6 +32,7 @@ export function SignInForm() {
     try {
       const { email } = await authApi.signIn(values);
       setEmail(email);
+      
       router.push("/inventory");
     } catch {
       setError("password", { type: "server", message: "Wrong password" });

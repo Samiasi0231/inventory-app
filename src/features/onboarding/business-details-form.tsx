@@ -1,29 +1,42 @@
+
 "use client";
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+
 import { CountryField, SelectField, TextField } from "@/components/form";
 import { StepFooter } from "@/components/onboarding";
 import { useOnboarding } from "@/context/onboarding-context";
 import { countries, currencies, staffRanges } from "@/data/locations";
 import { onboardingApi } from "@/lib/api";
-import { businessDetailsSchema, type BusinessDetailsValues } from "./schema";
- 
-const staffOptions = staffRanges.map((range) => ({ value: range, label: range }));
-const currencyOptions = currencies.map((c) => ({ value: c.code, label: c.label }));
- 
+import {
+  businessDetailsSchema,
+  type BusinessDetailsValues,
+} from "./schema";
+
+const staffOptions = staffRanges.map((range) => ({
+  value: range,
+  label: range,
+}));
+
+const currencyOptions = currencies.map((currency) => ({
+  value: currency.code,
+  label: currency.label,
+}));
+
 export function BusinessDetailsForm() {
   const router = useRouter();
-  const { businessType } = useOnboarding();
- 
+ const { businessType, fullName, setBusinessProfile } = useOnboarding();
+
   const {
     register,
     control,
     handleSubmit,
     watch,
     setValue,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<BusinessDetailsValues>({
     resolver: zodResolver(businessDetailsSchema),
@@ -38,26 +51,51 @@ export function BusinessDetailsForm() {
       taxId: "",
     },
   });
- 
+
   const countryCode = watch("country");
+
   const regionOptions = useMemo(
     () =>
-      (countries.find((c) => c.code === countryCode)?.regions ?? []).map((region) => ({
+      (
+        countries.find((country) => country.code === countryCode)?.regions ??
+        []
+      ).map((region) => ({
         value: region,
         label: region,
       })),
     [countryCode],
   );
- 
+
   const onSubmit = async (values: BusinessDetailsValues) => {
-    await onboardingApi.saveBusiness({
-      ...values,
-      businessType: businessType ?? "",
-      country: countries.find((c) => c.code === values.country)?.name ?? values.country,
-    });
-    router.push("/dashboard");
+    const countryName =
+      countries.find((country) => country.code === values.country)?.name ??
+      values.country;
+
+    try {
+      await onboardingApi.saveBusiness({
+        ...values,
+        businessType: businessType ?? "",
+        country: countryName,
+      });
+
+    setBusinessProfile({
+  fullName,
+  businessName: values.businessName,
+  city: values.city,
+  country: countryName,
+});
+      router.push("/onboarding/");
+    } catch (error) {
+      console.error("Failed to save business details:", error);
+
+      setError("root", {
+        type: "server",
+        message:
+          "We couldn't save your business details. Please try again.",
+      });
+    }
   };
- 
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
@@ -68,7 +106,7 @@ export function BusinessDetailsForm() {
           error={errors.businessName?.message}
           {...register("businessName")}
         />
- 
+
         <Controller
           control={control}
           name="staffRange"
@@ -84,7 +122,7 @@ export function BusinessDetailsForm() {
             />
           )}
         />
- 
+
         <Controller
           control={control}
           name="country"
@@ -95,13 +133,21 @@ export function BusinessDetailsForm() {
               onChange={(code) => {
                 field.onChange(code);
                 setValue("city", "");
-                const country = countries.find((c) => c.code === code);
-                if (country) setValue("currency", country.currency, { shouldValidate: true });
+
+                const country = countries.find(
+                  (item) => item.code === code,
+                );
+
+                if (country) {
+                  setValue("currency", country.currency, {
+                    shouldValidate: true,
+                  });
+                }
               }}
             />
           )}
         />
- 
+
         <TextField
           id="address"
           label="Business Address"
@@ -109,7 +155,7 @@ export function BusinessDetailsForm() {
           error={errors.address?.message}
           {...register("address")}
         />
- 
+
         <Controller
           control={control}
           name="city"
@@ -126,7 +172,7 @@ export function BusinessDetailsForm() {
             />
           )}
         />
- 
+
         <TextField
           id="postalCode"
           label="Postal/Zip Code"
@@ -134,7 +180,7 @@ export function BusinessDetailsForm() {
           error={errors.postalCode?.message}
           {...register("postalCode")}
         />
- 
+
         <Controller
           control={control}
           name="currency"
@@ -150,7 +196,7 @@ export function BusinessDetailsForm() {
             />
           )}
         />
- 
+
         <TextField
           id="taxId"
           label="Tax Id/VAT"
@@ -159,7 +205,13 @@ export function BusinessDetailsForm() {
           {...register("taxId")}
         />
       </div>
- 
+
+      {errors.root?.message && (
+        <p className="mt-4 text-sm text-red-600" role="alert">
+          {errors.root.message}
+        </p>
+      )}
+
       <StepFooter
         nextType="submit"
         loading={isSubmitting}

@@ -1,39 +1,45 @@
+import type { StaticImageData } from "next/image";
 import { Building2, MapPin, type LucideIcon } from "lucide-react";
- 
+import saleGirl from "@/assets/images/sale-gurl.png";
+import ladyAtBookshop from "@/assets/images/ladyatbookshop.jpg";
+import secretary from "@/assets/images/secretary.png";
+
 export interface AuthSlideChip {
   label: string;
   /** Position + colour classes for the floating pill. */
   className: string;
 }
- 
+
 export interface AuthSlideFloater {
   icon: LucideIcon;
   className: string;
   iconClassName?: string;
 }
- 
+
 export interface AuthSlide {
   id: string;
-  /** Drop the photo in /public/auth. Falls back to the gradient if missing. */
-  image: string;
+  /** Imported image (StaticImageData) or a path under /public. */
+  image: StaticImageData | string;
   gradient: string;
   title: string;
   subtitle: string;
   chips?: AuthSlideChip[];
   floaters?: AuthSlideFloater[];
 }
- 
-export const signupSlides: AuthSlide[] = [
+
+// One image per slide. Swap the imports below to match your design:
+// "all" and "simple" currently share `secretary` — replace one with your 4th image.
+export const authSlides: AuthSlide[] = [
   {
     id: "know",
-    image: "/auth/slide-know.jpg",
+    image:ladyAtBookshop ,
     gradient: "from-emerald-900 via-emerald-800 to-neutral-900",
     title: "Know what's happening.",
     subtitle: "Track your business in real time and make informed decisions with ease.",
   },
   {
     id: "grow",
-    image: "/auth/slide-grow.jpg",
+    image: saleGirl,
     gradient: "from-amber-800 via-orange-900 to-neutral-900",
     title: "Built to grow with you.",
     subtitle: "Manage one location or multiple branches with the tools you need to grow.",
@@ -46,7 +52,7 @@ export const signupSlides: AuthSlide[] = [
   },
   {
     id: "all",
-    image: "/auth/slide-all.jpg",
+    image: secretary,
     gradient: "from-sky-900 via-slate-800 to-neutral-900",
     title: "Your business, all in one place.",
     subtitle: "Manage sales, inventory, purchases, customers and your team from one platform.",
@@ -57,15 +63,33 @@ export const signupSlides: AuthSlide[] = [
       { label: "Staff Management", className: "left-[34%] top-[70%] bg-emerald-50 text-emerald-700" },
     ],
   },
-];
- 
-export const verifySlides: AuthSlide[] = [
   {
     id: "simple",
-    image: "/auth/slide-simple.jpg",
+    image: secretary,
     gradient: "from-rose-900 via-neutral-800 to-neutral-900",
     title: "All in one system to keep operations simple",
     subtitle: "Sign Up to log your inventory",
   },
-  signupSlides[2],
 ];
+
+/**
+ * Which slide each auth page shows (slide ids from `authSlides`).
+ * Keys are matched as a path prefix, so "/verify" also covers "/verify/anything".
+ * Pages not listed fall back to the first slide.
+ */
+export const authSlideByRoute: Record<string, string> = {
+  "/signup": "all",
+  "/verify": "simple",
+  "/signin": "know",
+};
+
+/** Index of the slide to show for a pathname. */
+export function getAuthSlideIndex(pathname: string, slides: AuthSlide[] = authSlides): number {
+  const route = Object.keys(authSlideByRoute).find((r) => pathname === r || pathname.startsWith(`${r}/`));
+  const index = route ? slides.findIndex((slide) => slide.id === authSlideByRoute[route]) : -1;
+  return index === -1 ? 0 : index;
+}
+
+// Kept so existing imports keep working.
+export const signupSlides: AuthSlide[] = authSlides;
+export const verifySlides: AuthSlide[] = authSlides;

@@ -1,6 +1,6 @@
 "use client";
 
-import WelcomeBackPage from "@/screens/welccome-back-page";
+import WelcomeBackPage from "@/screens/auth/welccome-back-page";
 
 export default function Page() {
   return <WelcomeBackPage />;

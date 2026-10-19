@@ -71,7 +71,6 @@ export function RecordPaymentDialog({
       onOpenChange={onOpenChange}
       title="Record Payment"
       description={`Against ${invoice.number} for ${invoice.customerName}`}
-      className="sm:max-w-[480px]"
       footer={
         <>
           <SecondaryButton onClick={() => onOpenChange(false)} disabled={isSubmitting}>

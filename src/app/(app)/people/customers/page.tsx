@@ -1,6 +1,6 @@
 
 import { Suspense } from "react";
-import CustomersPage from "@/screens/customers-page";
+import CustomersPage from "@/screens/customers/customers-page";
 
 export default function Page() {
   return (
