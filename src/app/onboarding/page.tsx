@@ -1,4 +1,4 @@
-import BusinnesCompletePage from "@/screens/businnes-complete-page";
+import BusinnesCompletePage from "@/screens/business/businnes-complete-page";
 
 export default function Page() {
   return <BusinnesCompletePage/>;

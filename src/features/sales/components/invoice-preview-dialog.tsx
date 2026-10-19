@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckIcon, PrinterIcon, Share2Icon } from "lucide-react";
+import { DIALOG_SHELL } from "@/components/common/form-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { useToast } from "@/components/ui/toast";
@@ -51,7 +52,7 @@ export function InvoicePreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
-        className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-[760px]"
+        className={DIALOG_SHELL}
       >
         <DialogTitle className="sr-only">Invoice {invoice.number}</DialogTitle>
 

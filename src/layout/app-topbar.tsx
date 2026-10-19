@@ -3,27 +3,52 @@
 import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
-import { BellIcon, CircleHelpIcon, MenuIcon, SearchIcon } from "lucide-react";
+import { BellIcon, HelpCircle, MenuIcon, SearchIcon } from "lucide-react";
 import { NAV_ITEMS } from "@/layout/nav-config";
 import { cn } from "@/lib/utils";
 
 const TOPBAR_ACTION_SLOT_ID = "topbar-action-slot";
+const TOPBAR_CRUMB_SLOT_ID = "topbar-crumb-slot";
 
 const subscribeNoop = () => () => {};
 
-/** Lets a page render its primary action into the shell's topbar. */
-export function TopbarAction({ children }: { children: React.ReactNode }) {
-  // The slot only exists in the DOM, so wait for hydration before portalling.
-  const mounted = useSyncExternalStore(
+function useMounted() {
+  return useSyncExternalStore(
     subscribeNoop,
     () => true,
     () => false,
   );
+}
 
+/** Lets a page render its primary action into the shell's topbar. */
+export function TopbarAction({ children }: { children: React.ReactNode }) {
+  const mounted = useMounted();
   if (!mounted) return null;
 
   const slot = document.getElementById(TOPBAR_ACTION_SLOT_ID);
   return slot ? createPortal(children, slot) : null;
+}
+
+export function TopbarBreadcrumb({
+  section,
+  page,
+}: {
+  section: string;
+  page: string;
+}) {
+  const mounted = useMounted();
+  if (!mounted) return null;
+
+  const slot = document.getElementById(TOPBAR_CRUMB_SLOT_ID);
+  return slot
+    ? createPortal(
+        <>
+          <span className="shrink-0 text-xs tracking-[0.18px] text-ink-3">{section} /</span>
+          <span className="truncate text-base font-semibold text-ink-1">{page}</span>
+        </>,
+        slot,
+      )
+    : null;
 }
 
 /** The parent section plus the current page, e.g. "Inventory / Products". */
@@ -64,9 +89,10 @@ export function AppTopbar({ onOpenSidebar, className }: AppTopbarProps) {
         >
           <MenuIcon className="size-5" />
         </button>
-        <p className="flex min-w-0 items-center gap-1 truncate">
+        <span id={TOPBAR_CRUMB_SLOT_ID} className="peer flex min-w-0 items-center gap-1" />
+        <p className="flex min-w-0 items-center gap-1 truncate peer-[:not(:empty)]:hidden">
           {section && (
-            <span className="text-xs tracking-[0.18px] text-ink-3">{section} /</span>
+            <span className="shrink-0 text-xs tracking-[0.18px] text-ink-3">{section} /</span>
           )}
           <span className="truncate text-base font-semibold text-ink-1">{page}</span>
         </p>
@@ -100,7 +126,7 @@ export function AppTopbar({ onOpenSidebar, className }: AppTopbarProps) {
           aria-label="Help"
           className="hidden size-[42px] items-center justify-center rounded-full border border-border text-ink-2 transition-colors hover:bg-surface-muted sm:flex"
         >
-          <CircleHelpIcon className="size-6" />
+        <HelpCircle className="size-6" />
         </button>
         <div id={TOPBAR_ACTION_SLOT_ID} className="contents" />
       </div>

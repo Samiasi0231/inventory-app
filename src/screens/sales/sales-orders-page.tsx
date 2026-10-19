@@ -3,10 +3,14 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  BanknoteIcon,
+  ChartColumnIcon,
   DownloadIcon,
   FileTextIcon,
+  HourglassIcon,
   PlusIcon,
   SearchIcon,
+  ShoppingCartIcon,
   TriangleAlertIcon,
 } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
@@ -18,40 +22,43 @@ import { useToast } from "@/components/ui/toast";
 import { useBranch } from "@/context/branch-context";
 import { BranchSelector } from "@/layout/branch-selector";
 import { TopbarAction } from "@/layout/app-topbar";
-import { formatCurrency, formatCurrencyCompact, formatNumber } from "@/lib/format";
+import { formatCurrencyCompact, formatNumber } from "@/lib/format";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { SortDirection } from "@/types/shared";
-import { InvoicePreviewDialog } from "@/features/sales/components/invoice-preview-dialog";
-import type { InvoiceAction } from "@/features/sales/components/invoice-row-actions";
-import { InvoicesTable } from "@/features/sales/components/invoices-table";
-import { RecordPaymentDialog } from "@/features/sales/components/record-payment-dialog";
-import { salesService } from "@/features/sales/sales.service";
-import { INVOICE_STATUS_LABELS, type Invoice, type InvoiceStatus } from "@/features/sales/types";
-import { useInvoiceList, useInvoiceSummary } from "@/features/sales/use-sales";
+import { useAsyncResource } from "@/hooks/use-async-resource";
+import { OrdersTable } from "@/features/sales/components/orders-table";
+import { ordersService } from "@/features/sales/orders.service";
+import {
+  ORDER_STATUS_LABELS,
+  type OrderAction,
+  type OrderStatus,
+  type SalesOrder,
+} from "@/features/sales/order-types";
 
-const STATUS_FILTERS: (InvoiceStatus | "all")[] = [
+const STATUS_FILTERS: (OrderStatus | "all")[] = [
   "all",
   "pending",
-  "partially_paid",
-  "paid",
+  "confirmed",
+  "partially_received",
+  "fulfilled",
+  "completed",
   "cancelled",
 ];
 
-export default function SalesInvoicesPage() {
+export default function SalesOrdersPage() {
   const router = useRouter();
   const { activeBranch } = useBranch();
   const toast = useToast();
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 350);
-  const [status, setStatus] = useState<InvoiceStatus | "all">("all");
+  const [status, setStatus] = useState<OrderStatus | "all">("all");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<string | undefined>();
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
-  const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
-  const [dialog, setDialog] = useState<"preview" | "payment" | "cancel" | null>(null);
-  const [dialogKey, setDialogKey] = useState(0);
+  const [activeOrder, setActiveOrder] = useState<SalesOrder | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
   const params = useMemo(
@@ -67,11 +74,24 @@ export default function SalesInvoicesPage() {
     [page, debouncedSearch, activeBranch.id, status, sortBy, sortDirection],
   );
 
-  const list = useInvoiceList(params);
-  const summary = useInvoiceSummary(activeBranch.id);
+  const {
+    data: resource,
+    loading,
+    error,
+    refetch,
+  } = useAsyncResource(
+    JSON.stringify(params),
+    () =>
+      Promise.all([
+        ordersService.listOrders(params),
+        ordersService.getSummary({ branchId: activeBranch.id }),
+      ]).then(([list, summary]) => ({ list, summary })),
+    "We couldn't load your sales orders. Please try again.",
+  );
 
-  const invoices = list.data?.data ?? [];
-  const total = list.data?.total ?? 0;
+  const orders = resource?.list.data ?? [];
+  const total = resource?.list.total ?? 0;
+  const summary = resource?.summary;
   const hasFilters = Boolean(debouncedSearch) || status !== "all";
 
   function handleSortChange(column: string) {
@@ -84,51 +104,74 @@ export default function SalesInvoicesPage() {
     }
   }
 
-  async function handleAction(action: InvoiceAction, invoice: Invoice) {
-    setActiveInvoice(invoice);
-    setDialogKey((key) => key + 1);
+  async function handleAction(action: OrderAction, order: SalesOrder) {
+    setActiveOrder(order);
 
-    if (action === "share") {
-      const summaryText = `${invoice.number} — ${formatCurrency(invoice.total)} for ${invoice.customerName}`;
+    if (action === "cancel") {
+      setCancelOpen(true);
+      return;
+    }
+
+    if (action === "view") {
+      router.push(`/sales/orders/${order.id}`);
+      return;
+    }
+
+    if (action === "view_returns") {
+      router.push(`/sales/orders/${order.id}?tab=returns`);
+      return;
+    }
+
+    if (action === "record_payment") {
+      router.push(`/sales/orders/${order.id}?tab=payments`);
+      return;
+    }
+
+    if (action === "view_invoice" || action === "create_invoice") {
+      router.push("/sales/invoices");
+      return;
+    }
+
+    if (action === "view_receipt") {
+      router.push("/sales/receipts");
+      return;
+    }
+
+    if (action === "send_goods") {
       try {
-        await navigator.clipboard.writeText(summaryText);
-        toast.add({ type: "success", title: "Copied to clipboard", description: summaryText });
-      } catch {
+        await ordersService.markGoodsSent(order.id);
         toast.add({
-          type: "error",
-          title: "Couldn't copy",
-          description: "Your browser blocked clipboard access.",
+          type: "success",
+          title: "Goods sent",
+          description: `${order.orderId} is now marked as fulfilled.`,
         });
+        refetch();
+      } catch {
+        toast.add({ type: "error", title: "Couldn't update order", description: "Please try again." });
       }
       return;
     }
 
-    setDialog(action === "view" ? "preview" : action === "payment" ? "payment" : "cancel");
+    router.push(`/sales/orders/${order.id}`);
   }
 
   async function confirmCancel() {
-    if (!activeInvoice) return;
+    if (!activeOrder) return;
     setCancelling(true);
     try {
-      await salesService.cancelInvoice(activeInvoice.id);
+      await ordersService.cancelOrder(activeOrder.id);
       toast.add({
         type: "success",
-        title: "Invoice cancelled",
-        description: `${activeInvoice.number} can no longer be paid. Issue a corrected invoice in its place.`,
+        title: "Order cancelled",
+        description: `${activeOrder.orderId} has been cancelled.`,
       });
-      setDialog(null);
-      list.refetch();
-      summary.refetch();
+      setCancelOpen(false);
+      refetch();
     } catch {
-      toast.add({ type: "error", title: "Couldn't cancel invoice", description: "Please try again." });
+      toast.add({ type: "error", title: "Couldn't cancel order", description: "Please try again." });
     } finally {
       setCancelling(false);
     }
-  }
-
-  function handleMutationSuccess() {
-    list.refetch();
-    summary.refetch();
   }
 
   return (
@@ -146,9 +189,9 @@ export default function SalesInvoicesPage() {
 
       <section className="flex flex-col gap-4 rounded-xl bg-surface p-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-ink-1">Invoices</h1>
+          <h1 className="text-xl font-semibold text-ink-1">Sales Orders</h1>
           <p className="mt-2 text-base text-ink-1">
-            Invoices are locked once confirmed. To fix one, cancel it and issue a corrected invoice.
+            Every sale in your organization, including cancelled and pending ones.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -163,38 +206,44 @@ export default function SalesInvoicesPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {summary.loading || !summary.data ? (
-          Array.from({ length: 4 }).map((_, index) => <StatCardSkeleton key={index} />)
+      <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
+        {loading || !summary ? (
+          Array.from({ length: 5 }).map((_, index) => <StatCardSkeleton key={index} />)
         ) : (
           <>
             <StatCard
-              icon={FileTextIcon}
-              label="Total Invoiced"
-              value={formatCurrencyCompact(summary.data.totalInvoiced)}
-              description="Across all invoices"
-              delta={summary.data.totalInvoicedDelta}
+              icon={ShoppingCartIcon}
+              label="Total Sales"
+              valueClassName="text-xl"
+              value={formatCurrencyCompact(summary.totalSales)}
+              description={`Generated from ${formatNumber(summary.invoiceCount)} invoices`}
+            />
+            <StatCard
+              icon={BanknoteIcon}
+              label="Collected"
+              valueClassName="text-xl"
+              value={formatCurrencyCompact(summary.collected)}
+              description="Payments received"
+            />
+            <StatCard
+              icon={HourglassIcon}
+              label="Outstanding"
+              valueClassName="text-xl"
+              value={formatCurrencyCompact(summary.outstanding)}
+              description="Still to be collected"
+            />
+            <StatCard
+              icon={ChartColumnIcon}
+              label="Gross profit"
+              valueClassName="text-xl"
+              value={formatCurrencyCompact(summary.grossProfit)}
+              description="After cost of goods"
             />
             <StatCard
               icon={FileTextIcon}
-              label="Total Paid"
-              value={formatCurrencyCompact(summary.data.totalPaid)}
-              description="Settled by customers"
-              delta={summary.data.totalPaidDelta}
-            />
-            <StatCard
-              icon={FileTextIcon}
-              label="Balance Due"
-              value={formatCurrencyCompact(summary.data.balanceDue)}
-              description="Still outstanding"
-              delta={summary.data.balanceDueDelta}
-            />
-            <StatCard
-              icon={FileTextIcon}
-              label="Overdue Invoices"
-              value={formatNumber(summary.data.overdueCount)}
-              description="Past their due date"
-              delta={summary.data.overdueCountDelta}
+              label="Invoices"
+              value={formatNumber(summary.invoices)}
+              description="Raised from these orders"
             />
           </>
         )}
@@ -211,8 +260,8 @@ export default function SalesInvoicesPage() {
                 setSearch(event.target.value);
                 setPage(1);
               }}
-              placeholder="Search invoices or customers"
-              aria-label="Search invoices"
+              placeholder="Search in Items"
+              aria-label="Search sales orders"
               className="min-w-0 flex-1 bg-transparent text-base text-ink-1 outline-none placeholder:text-ink-4"
             />
           </div>
@@ -233,27 +282,27 @@ export default function SalesInvoicesPage() {
                     : "rounded-full border border-border px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-muted"
                 }
               >
-                {entry === "all" ? "All" : INVOICE_STATUS_LABELS[entry]}
+                {entry === "all" ? "All" : ORDER_STATUS_LABELS[entry]}
               </button>
             ))}
           </div>
         </div>
 
-        {list.error ? (
+        {error ? (
           <EmptyState
             icon={TriangleAlertIcon}
-            title="We couldn't load your invoices"
-            description={list.error}
-            action={<SecondaryButton onClick={list.refetch}>Try again</SecondaryButton>}
+            title="We couldn't load your sales orders"
+            description={error}
+            action={<SecondaryButton onClick={refetch}>Try again</SecondaryButton>}
           />
-        ) : !list.loading && invoices.length === 0 ? (
+        ) : !loading && orders.length === 0 ? (
           <EmptyState
-            icon={FileTextIcon}
-            title={hasFilters ? "No invoices match your filters" : "No invoices yet"}
+            icon={ShoppingCartIcon}
+            title={hasFilters ? "No orders match your filters" : "No sales orders yet"}
             description={
               hasFilters
                 ? "Try a different search term or status."
-                : "Invoices appear here once you confirm a sale."
+                : "Orders appear here once customers place them."
             }
             action={
               hasFilters ? (
@@ -273,9 +322,9 @@ export default function SalesInvoicesPage() {
           />
         ) : (
           <>
-            <InvoicesTable
-              invoices={invoices}
-              loading={list.loading}
+            <OrdersTable
+              orders={orders}
+              loading={loading}
               sortBy={sortBy}
               sortDirection={sortDirection}
               onSortChange={handleSortChange}
@@ -286,50 +335,30 @@ export default function SalesInvoicesPage() {
         )}
       </section>
 
-      <InvoicePreviewDialog
-        invoice={activeInvoice}
-        open={dialog === "preview"}
-        onOpenChange={(open) => setDialog(open ? "preview" : null)}
-      />
-
-      {activeInvoice && (
-        <RecordPaymentDialog
-          key={`payment-${dialogKey}`}
-          invoice={activeInvoice}
-          open={dialog === "payment"}
-          onOpenChange={(open) => setDialog(open ? "payment" : null)}
-          onSuccess={handleMutationSuccess}
-        />
-      )}
-
       <FormDialog
-        open={dialog === "cancel"}
-        onOpenChange={(open) => setDialog(open ? "cancel" : null)}
-        title="Cancel invoice"
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        title="Cancel order"
         description={
-          activeInvoice
-            ? `${activeInvoice.number} will be voided and can no longer be paid.`
-            : undefined
+          activeOrder ? `${activeOrder.orderId} will be marked as cancelled.` : undefined
         }
-        className="sm:max-w-[440px]"
         footer={
           <>
-            <SecondaryButton onClick={() => setDialog(null)} disabled={cancelling}>
-              Keep invoice
+            <SecondaryButton onClick={() => setCancelOpen(false)} disabled={cancelling}>
+              Keep order
             </SecondaryButton>
             <PrimaryButton
               onClick={confirmCancel}
               loading={cancelling}
               className="bg-destructive hover:bg-destructive/90 active:bg-destructive"
             >
-              Cancel invoice
+              Cancel order
             </PrimaryButton>
           </>
         }
       >
         <p className="text-sm text-ink-3">
-          Cancelling keeps the record for audit. To correct a mistake, cancel this invoice and issue
-          a new one in its place.
+          Cancelling keeps the record for audit. Any payment already taken will show as refunded.
         </p>
       </FormDialog>
     </div>
