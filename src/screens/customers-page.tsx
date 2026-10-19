@@ -76,7 +76,7 @@ export default function CustomersPage({ title, description }: StaffPageProps) {
     );
 
   return (
-    <div className="space-y-5 p-6">
+    <div className="min-w-0 space-y-6">
       <ListPageHeader
         title="Customer"
         description="Manage customer records, balances and sales history"

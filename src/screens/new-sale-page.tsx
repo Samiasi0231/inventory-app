@@ -1,17 +1,26 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PlusIcon, SearchIcon } from "lucide-react";
 import { PrimaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { useBranch } from "@/context/branch-context";
 import { TopbarAction } from "@/layout/app-topbar";
 import { cn } from "@/lib/utils";
 import { PackageIcon } from "lucide-react";
 import { CartPanel } from "@/features/sales/components/cart-panel";
-import { InvoicePreviewDialog } from "@/features/sales/components/invoice-preview-dialog";
+import { ReceiptDialog } from "@/features/sales/components/receipt-dialog";
+import type { Receipt } from "@/features/sales/receipts.service";
 import { ProductCard } from "@/features/sales/components/product-card";
 import { SALE_CATEGORIES } from "@/features/sales/mock-data";
 import { salesService } from "@/features/sales/sales.service";
@@ -19,16 +28,16 @@ import {
   calculateCartTotals,
   type CartLine,
   type DiscountMode,
-  type Invoice,
   type SalePayment,
   type SellableProduct,
 } from "@/features/sales/types";
 import { useSaleCatalog } from "@/features/sales/use-sales";
 
 export default function NewSalePage() {
+  const router = useRouter();
   const { activeBranch } = useBranch();
   const toast = useToast();
-  const { products, customers, loading, setCustomers } = useSaleCatalog(activeBranch.id);
+  const { products, customers, loading } = useSaleCatalog(activeBranch.id);
 
   const [customerId, setCustomerId] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -42,7 +51,7 @@ export default function NewSalePage() {
   const [paymentMethod, setPaymentMethod] = useState<SalePayment["method"]>("cash");
 
   const [submitting, setSubmitting] = useState(false);
-  const [completed, setCompleted] = useState<{ invoice: Invoice; message: string } | null>(null);
+  const [completed, setCompleted] = useState<Receipt | null>(null);
 
   const visibleProducts = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -125,9 +134,23 @@ export default function NewSalePage() {
 
       const invoice = await salesService.getInvoice(result.invoiceId);
       if (invoice) {
+        const primaryMethod = payments[0]?.method ?? "credit";
         setCompleted({
-          invoice,
-          message: `${result.invoiceNumber} created. Stock updated, ledger written, audit event recorded.`,
+          id: `receipt_${result.invoiceId}`,
+          number: result.receiptNumber,
+          issuedAt: invoice.issueDate,
+          invoiceNumber: invoice.number,
+          customerName: invoice.customerName,
+          method: primaryMethod,
+          receivedBy: "Amaka Obi",
+          amount: invoice.amountPaid,
+          invoiceTotal: invoice.total,
+          lines: invoice.lines.map((line) => ({
+            description: `${line.quantity} × ${line.name}`,
+            quantity: line.quantity,
+            amount: line.amount,
+          })),
+          branchId: invoice.branchId,
         });
       }
 
@@ -148,14 +171,6 @@ export default function NewSalePage() {
     }
   }
 
-  async function addCustomer() {
-    const name = window.prompt("Customer name");
-    if (!name?.trim()) return;
-    const created = await salesService.createCustomer(name.trim());
-    setCustomers((current) => [created, ...current]);
-    setCustomerId(created.id);
-  }
-
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <TopbarAction>
@@ -169,42 +184,39 @@ export default function NewSalePage() {
         </PrimaryButton>
       </TopbarAction>
 
-      <header>
+      <header className="px-0.5">
         <h1 className="text-xl font-semibold text-ink-1">New sale</h1>
         <p className="mt-1 text-base text-ink-1">
           Pick items, take payment, and confirm. The invoice and receipt are created together.
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
         <section className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-1.5">
               <label htmlFor="customer" className="text-sm text-ink-2">
                 Customer
               </label>
-              <select
-                id="customer"
+              <Select
                 value={customerId}
-                onChange={(event) => setCustomerId(event.target.value)}
-                className="h-[42px] w-full rounded-lg border border-border bg-surface px-4 text-sm text-ink-1 outline-none focus-visible:border-primary"
+                onValueChange={(value) => setCustomerId(value ?? "")}
               >
-                <option value="">Walk-in customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              onClick={addCustomer}
-              className="flex h-[42px] shrink-0 items-center gap-1 rounded-lg border border-border px-4 text-sm font-semibold text-primary transition-colors hover:bg-surface-muted"
-            >
-              <PlusIcon className="size-4" />
-              New
-            </button>
+                <SelectTrigger id="customer" className="w-full">
+                  <SelectValue>{customerId ? customers.find((customer) => customer.id === customerId)?.name : "Walk-in customer"}</SelectValue>
+                </SelectTrigger>
+                <SelectContent
+                  align="start"
+                  sideOffset={0}
+                  className="p-0 [&_[data-slot=select-item]]:rounded-none [&_[data-slot=select-item]]:border-b [&_[data-slot=select-item]]:border-border/50 [&_[data-slot=select-item]:last-child]:border-b-0"
+                >
+                  <SelectItem value="">Walk-in customer</SelectItem>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
           </div>
 
           <div className="flex h-[42px] items-center gap-2 rounded-lg border border-border px-4">
@@ -240,7 +252,7 @@ export default function NewSalePage() {
           </div>
 
           {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               {Array.from({ length: 9 }).map((_, index) => (
                 <Skeleton key={index} className="h-[132px] rounded-xl" />
               ))}
@@ -252,7 +264,7 @@ export default function NewSalePage() {
               description="Try a different search term or category."
             />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               {visibleProducts.map((product) => (
                 <ProductCard key={product.id} product={product} onSelect={addProduct} />
               ))}
@@ -286,11 +298,15 @@ export default function NewSalePage() {
         />
       </div>
 
-      <InvoicePreviewDialog
-        invoice={completed?.invoice ?? null}
+      <ReceiptDialog
+        receipt={completed}
         open={Boolean(completed)}
         onOpenChange={(open) => !open && setCompleted(null)}
-        confirmation={completed?.message}
+        title="Sale confirmed"
+        onViewSale={() => {
+          setCompleted(null);
+          router.push("/sales/invoices");
+        }}
       />
     </div>
   );

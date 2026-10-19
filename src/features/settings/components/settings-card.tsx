@@ -9,6 +9,6 @@ export function SettingsCard({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-xl bg-surface p-6", className)}>{children}</section>
+    <section className={cn("settings-card rounded-xl bg-surface p-5", className)}>{children}</section>
   );
 }

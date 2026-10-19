@@ -15,7 +15,6 @@ import {
   type InventoryItem,
   type InventoryListParams,
   type InventorySummary,
-  type ReorderStockPayload,
   type TransferStockPayload,
 } from "./types";
 
@@ -170,11 +169,6 @@ export const inventoryService = {
     return { reference: `ADJ-${Date.now().toString().slice(-6)}` };
   },
 
-  /** Records the reorder intent; it does not create the purchase order. */
-  async reorderStock(_payload: ReorderStockPayload): Promise<{ reference: string }> {
-    await sleep(800);
-    return { reference: `PO-${Date.now().toString().slice(-6)}` };
-  },
 
   async archiveItem(id: ID): Promise<void> {
     await sleep(600);

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import "@/features/settings/settings.css";
 import { ToastProvider, Toaster } from "@/components/ui/toast";
 import { BranchProvider } from "@/context/branch-context";
 

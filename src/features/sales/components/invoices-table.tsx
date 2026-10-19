@@ -13,9 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { SortDirection } from "@/types/shared";
-import { getBalanceDue, getInvoiceStatus, type Invoice } from "../types";
+import { getBalanceDue, getInvoiceStatus, INVOICE_STATUS_LABELS, type Invoice } from "../types";
 import { InvoiceRowActions, type InvoiceAction } from "./invoice-row-actions";
-import { InvoiceStatusBadge } from "./invoice-status-badge";
 
 interface Column {
   id: string;
@@ -26,11 +25,11 @@ interface Column {
 }
 
 const COLUMNS: Column[] = [
-  { id: "number", label: "Invoice No", width: "w-[150px]", sortable: true },
-  { id: "issueDate", label: "Issue Date", width: "w-[130px]", sortable: true },
-  { id: "dueDate", label: "Due Date", width: "w-[130px]", sortable: true },
-  { id: "customerName", label: "Customer", sortable: true },
-  { id: "total", label: "Amount", width: "w-[140px]", sortable: true },
+  { id: "number", label: "Invoices", width: "w-[150px]", sortable: true },
+  { id: "issueDate", label: "Issued", width: "w-[130px]", sortable: true },
+  { id: "dueDate", label: "Due", width: "w-[130px]", sortable: true },
+  { id: "customerName", label: "Type", sortable: true },
+  { id: "total", label: "Total", width: "w-[140px]", sortable: true },
   { id: "balanceDue", label: "Balance", width: "w-[140px]", sortable: true },
   { id: "status", label: "Status", width: "w-[140px]" },
   { id: "actions", label: "Actions", width: "w-[78px]", align: "center" },
@@ -56,7 +55,7 @@ export function InvoicesTable({
   onAction,
 }: InvoicesTableProps) {
   return (
-    <Table className="min-w-[1000px]">
+    <Table className="min-w-[1000px] [&_tbody_td]:h-10 [&_tbody_td]:border-b-0 [&_tbody_td]:py-1">
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {COLUMNS.map((column) => {
@@ -117,14 +116,14 @@ export function InvoicesTable({
                   <TableCell className="w-[130px]">{formatDate(invoice.issueDate)}</TableCell>
                   <TableCell className="w-[130px]">{formatDate(invoice.dueDate)}</TableCell>
                   <TableCell className="max-w-0 truncate" title={invoice.customerName}>
-                    {invoice.customerName}
+                    Customer
                   </TableCell>
                   <TableCell className="w-[140px]">{formatCurrency(invoice.total)}</TableCell>
                   <TableCell className="w-[140px]">
                     {balance > 0 ? formatCurrency(balance) : "-"}
                   </TableCell>
                   <TableCell className="w-[140px]">
-                    <InvoiceStatusBadge status={getInvoiceStatus(invoice)} />
+                    <InvoiceStatusText status={getInvoiceStatus(invoice)} />
                   </TableCell>
                   <TableCell className="w-[78px] text-center">
                     <div className="flex justify-center">
@@ -137,4 +136,15 @@ export function InvoicesTable({
       </TableBody>
     </Table>
   );
+}
+
+function InvoiceStatusText({ status }: { status: ReturnType<typeof getInvoiceStatus> }) {
+  const color = status === "paid" || status === "completed"
+    ? "text-success-fg"
+    : status === "partially_paid"
+      ? "text-amber-500"
+      : status === "cancelled"
+        ? "text-ink-3"
+        : "text-destructive";
+  return <span className={cn("text-xs font-medium", color)}>• {INVOICE_STATUS_LABELS[status]}</span>;
 }

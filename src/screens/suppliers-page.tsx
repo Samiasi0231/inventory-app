@@ -84,7 +84,7 @@ export default function SuppliersPage({
     );
 
   return (
-    <div className="space-y-5 p-6">
+    <div className="min-w-0 space-y-6">
       <ListPageHeader
         title="Suppliers"
         description="Gives product prices and terms"

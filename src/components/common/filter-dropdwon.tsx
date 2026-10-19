@@ -40,7 +40,7 @@ export function FilterDropdown<T extends string>({
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "flex h-9 items-center gap-2 rounded-md border border-emerald-600 bg-white px-3 text-xs text-emerald-700",
+          "flex h-9 items-center gap-2 rounded-lg border border-border bg-white px-3 text-xs font-medium text-primary shadow-[0_1px_2px_rgba(47,47,47,0.04)] transition-colors hover:border-primary",
           className,
         )}
       >
@@ -51,7 +51,7 @@ export function FilterDropdown<T extends string>({
       {open && (
         <ul
           className={cn(
-            "absolute z-20 mt-1 min-w-full overflow-hidden rounded-md border border-gray-200 bg-white py-1 shadow-lg",
+            "absolute z-20 mt-1 min-w-full overflow-hidden rounded-lg border border-border/60 bg-white p-1 shadow-[0_10px_30px_rgba(47,47,47,0.12)]",
             align === "right" ? "right-0" : "left-0",
           )}
         >
@@ -63,8 +63,8 @@ export function FilterDropdown<T extends string>({
                 setOpen(false);
               }}
               className={cn(
-                "cursor-pointer whitespace-nowrap px-3 py-2 text-xs hover:bg-emerald-50",
-                o === value && "bg-emerald-50 font-medium text-emerald-800",
+                "cursor-pointer rounded-md whitespace-nowrap px-3 py-2 text-xs text-ink-2 hover:bg-surface-muted",
+                o === value && "bg-accent font-medium text-accent-foreground",
               )}
             >
               {o}

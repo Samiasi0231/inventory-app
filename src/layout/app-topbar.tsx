@@ -8,27 +8,66 @@ import { NAV_ITEMS } from "@/layout/nav-config";
 import { cn } from "@/lib/utils";
 
 const TOPBAR_ACTION_SLOT_ID = "topbar-action-slot";
+const TOPBAR_CRUMB_SLOT_ID = "topbar-crumb-slot";
+
+const REPORT_TITLES: Record<string, string> = {
+  sales: "Sales Report",
+  inventory: "Inventory Report",
+  suppliers: "Supplier Report",
+  refunds: "Refund Report",
+  payments: "Payment Report",
+  customers: "Customer Report",
+};
 
 const subscribeNoop = () => () => {};
 
-/** Lets a page render its primary action into the shell's topbar. */
-export function TopbarAction({ children }: { children: React.ReactNode }) {
-  // The slot only exists in the DOM, so wait for hydration before portalling.
-  const mounted = useSyncExternalStore(
+function useMounted() {
+  return useSyncExternalStore(
     subscribeNoop,
     () => true,
     () => false,
   );
+}
 
+/** Lets a page render its primary action into the shell's topbar. */
+export function TopbarAction({ children }: { children: React.ReactNode }) {
+  const mounted = useMounted();
   if (!mounted) return null;
 
   const slot = document.getElementById(TOPBAR_ACTION_SLOT_ID);
   return slot ? createPortal(children, slot) : null;
 }
 
+export function TopbarBreadcrumb({
+  section,
+  page,
+}: {
+  section: string;
+  page: string;
+}) {
+  const mounted = useMounted();
+  if (!mounted) return null;
+
+  const slot = document.getElementById(TOPBAR_CRUMB_SLOT_ID);
+  return slot
+    ? createPortal(
+        <>
+          <span className="shrink-0 text-xs tracking-[0.18px] text-ink-3">{section} /</span>
+          <span className="truncate text-base font-semibold text-ink-1">{page}</span>
+        </>,
+        slot,
+      )
+    : null;
+}
+
 /** The parent section plus the current page, e.g. "Inventory / Products". */
 function useBreadcrumb() {
   const pathname = usePathname();
+  if (pathname.startsWith("/sales/")) return { section: null, page: "Sales" };
+  const reportTitle = pathname.startsWith("/reports/")
+    ? REPORT_TITLES[pathname.split("/")[2]]
+    : undefined;
+  if (reportTitle) return { section: "Reports", page: reportTitle };
 
   for (const item of NAV_ITEMS) {
     const child = item.children?.find((entry) => pathname.startsWith(entry.href));
@@ -51,11 +90,11 @@ export function AppTopbar({ onOpenSidebar, className }: AppTopbarProps) {
   return (
     <header
       className={cn(
-        "flex h-20 shrink-0 items-center justify-between gap-4 bg-surface px-4 py-4 lg:px-8",
+        "flex min-h-20 shrink-0 flex-wrap items-center justify-between gap-3 sm:flex-nowrap sm:gap-4 bg-surface px-4 py-4 lg:px-8",
         className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-2 lg:w-60">
+      <div className="flex min-w-0 items-center gap-2 lg:w-48 xl:w-60">
         <button
           type="button"
           onClick={onOpenSidebar}
@@ -64,20 +103,21 @@ export function AppTopbar({ onOpenSidebar, className }: AppTopbarProps) {
         >
           <MenuIcon className="size-5" />
         </button>
-        <p className="flex min-w-0 items-center gap-1 truncate">
+        <span id={TOPBAR_CRUMB_SLOT_ID} className="peer flex min-w-0 items-center gap-1" />
+        <p className="flex min-w-0 items-center gap-1 truncate peer-[:not(:empty)]:hidden">
           {section && (
-            <span className="text-xs tracking-[0.18px] text-ink-3">{section} /</span>
+            <span className="shrink-0 text-xs tracking-[0.18px] text-ink-3">{section} /</span>
           )}
           <span className="truncate text-base font-semibold text-ink-1">{page}</span>
         </p>
       </div>
 
       {/* Held back to lg: below that the breadcrumb and actions need the room. */}
-      <div className="hidden h-[42px] w-full max-w-[460px] items-center gap-2 rounded-lg border border-border px-4 py-2 lg:flex">
+      <div className="hidden h-[42px] w-full max-w-[460px] min-w-0 items-center gap-2 rounded-lg border border-border px-4 py-2 lg:flex">
         <SearchIcon className="size-5 shrink-0 text-ink-4" />
         <input
           type="search"
-          placeholder="Search Anything"
+          placeholder="Search anything"
           aria-label="Search anything"
           className="min-w-0 flex-1 bg-transparent text-base text-ink-1 outline-none placeholder:text-ink-4"
         />
@@ -102,7 +142,7 @@ export function AppTopbar({ onOpenSidebar, className }: AppTopbarProps) {
         >
           <CircleHelpIcon className="size-6" />
         </button>
-        <div id={TOPBAR_ACTION_SLOT_ID} className="contents" />
+        <div id={TOPBAR_ACTION_SLOT_ID} className="flex min-w-0 flex-wrap items-center gap-2" />
       </div>
     </header>
   );

@@ -24,6 +24,9 @@ const ROLE_LABELS: Record<User["role"], string> = {
 };
 
 function isItemActive(item: NavItem, pathname: string) {
+  if (item.label === "Transactions" && (pathname.startsWith("/sales") || pathname.startsWith("/purchasing"))) {
+    return true;
+  }
   if (item.children?.some((child) => pathname.startsWith(child.href))) return true;
   return item.href ? pathname.startsWith(item.href) : false;
 }
@@ -70,19 +73,17 @@ function NavSection({ item, pathname }: { item: NavItem; pathname: string }) {
       {expanded &&
         item.children.map((child) => {
           const childActive = pathname.startsWith(child.href);
-          const ChildIcon = child.icon;
           return (
             <Link
               key={child.href}
               href={child.href}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-4 py-2 text-xs tracking-[0.18px] transition-colors",
+                "flex items-center rounded-lg py-2 pr-4 pl-11 text-xs tracking-[0.18px] transition-colors",
                 childActive
                   ? "bg-accent font-semibold text-accent-foreground"
                   : "font-medium text-ink-1 hover:bg-surface-muted",
               )}
             >
-              <ChildIcon className="size-5 shrink-0" />
               {child.label}
             </Link>
           );

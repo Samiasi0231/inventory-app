@@ -85,6 +85,9 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  select {
+    background-color: #fff;
+  }
 }
 
 
@@ -115,5 +118,24 @@ input:autofill:focus {
   caret-color: #2f2f2f;
   box-shadow: 0 0 0 1000px #e6fff3 inset;
   border-color: #008c4b;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-print,
+  .receipt-print * {
+    visibility: visible;
+  }
+  .receipt-print {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 24px;
+  }
 }
 

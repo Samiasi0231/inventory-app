@@ -29,13 +29,13 @@ export function DataTable<T>({
   const cellPad = density === "comfortable" ? "px-4 py-5" : "px-4 py-3";
 
   return (
-    <div className="overflow-x-auto">
+    <div className="min-w-0 max-w-full overflow-x-auto">
       <table
-        className="w-full text-left text-xs text-gray-700"
+        className="w-full text-left text-sm tracking-[0.14px] text-ink-2"
         style={{ minWidth }}
       >
         <thead>
-          <tr className="bg-gray-50 text-[11px] font-medium text-gray-500">
+          <tr className="bg-surface-muted text-xs font-semibold text-ink-1">
             {columns.map((c) => (
               <th
                 key={c.key}

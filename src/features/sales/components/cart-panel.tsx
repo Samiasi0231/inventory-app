@@ -3,6 +3,13 @@
 import { MinusIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { TextInput } from "@/components/form/app-fields";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
@@ -62,7 +69,7 @@ export function CartPanel({
   const outstanding = Math.max(0, total - paid);
 
   return (
-    <aside className="flex h-fit flex-col gap-4 rounded-xl bg-surface p-5 lg:sticky lg:top-6">
+    <aside className="flex h-fit min-w-0 flex-col gap-4 rounded-xl bg-surface p-5 xl:sticky xl:top-6">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-ink-1">Cart</h2>
         <button
@@ -206,18 +213,19 @@ export function CartPanel({
             onChange={(event) => onPaymentAmountChange(event.target.value)}
             className="h-10"
           />
-          <select
-            aria-label="Payment method"
+          <Select
             value={paymentMethod}
-            onChange={(event) =>
-              onPaymentMethodChange(event.target.value as SalePayment["method"])
-            }
-            className="h-10 shrink-0 rounded-lg border border-border bg-surface px-3 text-sm text-ink-1 outline-none focus-visible:border-primary"
+            onValueChange={(value) => onPaymentMethodChange(value as SalePayment["method"])}
           >
-            <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="transfer">Transfer</option>
-          </select>
+            <SelectTrigger aria-label="Payment method" className="h-10 w-28 shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectItem value="cash">Cash</SelectItem>
+              <SelectItem value="card">Card</SelectItem>
+              <SelectItem value="transfer">Transfer</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center gap-2">

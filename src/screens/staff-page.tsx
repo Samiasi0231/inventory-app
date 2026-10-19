@@ -85,10 +85,10 @@ export default function StaffPage({ title, description }: StaffPageProps) {
     );
 
   return (
-    <div className="space-y-5 p-6">
+    <div className="min-w-0 space-y-6">
       <ListPageHeader
         title="Staff"
-        description="Manage employee, roles and access"
+        description="Manage employees, roles and access."
         branch={branch}
         branches={BRANCHES}
         onBranchChange={setBranch}

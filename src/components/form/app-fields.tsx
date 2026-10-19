@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
  */
 
 export const controlClass =
-  "h-[42px] w-full rounded-lg border border-border bg-surface px-4 text-sm text-ink-1 outline-none transition-colors " +
+  "h-[42px] w-full rounded-lg border border-border bg-white px-4 text-sm text-ink-1 outline-none shadow-[0_1px_2px_rgba(47,47,47,0.04)] transition-colors " +
   "placeholder:text-ink-4 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/15 " +
   "disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-70";
 
@@ -96,7 +96,7 @@ export const SelectInput = forwardRef<
       aria-invalid={invalid || undefined}
       className={cn(
         controlClass,
-        "appearance-none pr-10",
+        "appearance-none pr-10 has-[option[value='']:checked]:text-ink-4",
         invalid && controlErrorClass,
         className,
       )}

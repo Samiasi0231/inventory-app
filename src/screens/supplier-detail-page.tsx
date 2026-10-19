@@ -37,7 +37,7 @@ export default function SupplierDetailPage() {
   }
 
   return (
-    <div className="space-y-5 p-6">
+    <div className="min-w-0 space-y-6">
       <EntityHeaderCard
         name={supplier.name}
         meta={`${supplier.type} • ${supplier.code}`}

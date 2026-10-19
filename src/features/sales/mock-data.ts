@@ -2,7 +2,7 @@ import type { Customer, Invoice, InvoiceLine, SellableProduct } from "./types";
 
 /** Issuing business, printed on invoices and receipts. */
 export const BUSINESS_PROFILE = {
-  name: "Donquixote.CO",
+  name: "Adaeze Trading Co.",
   address: "14 Aminu Kano Crescent, Wuse II, Abuja",
   phone: "+234 803 555 0142",
   email: "hello@adaezetrading.ng",
@@ -10,11 +10,8 @@ export const BUSINESS_PROFILE = {
 };
 
 export const MOCK_CUSTOMERS: Customer[] = [
-  { id: "cus_ngozi", name: "Mama Ngozi Store", phone: "0813 552 9087" },
-  { id: "cus_donquixote", name: "Donquixote", phone: "0802 114 7781" },
-  { id: "cus_blessing", name: "Blessing Supermarket", phone: "0706 229 4410" },
-  { id: "cus_chidi", name: "Chidi Wholesale", phone: "0908 771 3320" },
-  { id: "cus_amara", name: "Amara Provisions", phone: "0815 640 9912" },
+  { id: "cus_ngozi", name: "Ngozie Wholesale", phone: "0813 552 9087" },
+  { id: "cus_donquixote", name: "Donquixote LLC Retail", phone: "0802 114 7781" },
 ];
 
 export const SALE_CATEGORIES = [
