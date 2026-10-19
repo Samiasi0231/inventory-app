@@ -3,8 +3,8 @@ import retailImage from "@/assets/images/retail.svg";
 import restaurantImage from "@/assets/images/Bowlfood.svg";
 import hospitalImage from "@/assets/images/cross.svg";
 import hotelImage from "@/assets/images/hospitality.svg";
-import manufacturingImage from "@/assets/images/manifacturing.svg.svg";
-import wholesaleImage from "@/assets/images/wholesales.svg.svg";
+import manufacturingImage from "@/assets/images/manifacturing.svg";
+import wholesaleImage from "@/assets/images/wholesales.svg";
 
 export interface BusinessType {
   id: string;
