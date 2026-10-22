@@ -5,13 +5,10 @@ interface StatusScreenProps {
   icon: LucideIcon;
   title: string;
   description?: string;
-  /** "badge": white icon on a green tile. "plain": large green outline icon. */
   iconStyle?: "badge" | "plain";
-  /** Action area under the text, e.g. a button. */
   children?: ReactNode;
 }
  
-/** Full-screen centered confirmation (verified, success, etc.). */
 export function StatusScreen({ icon: Icon, title, description, iconStyle = "badge", children }: StatusScreenProps) {
   return (
     <main className="grid min-h-screen place-items-center bg-background px-6">

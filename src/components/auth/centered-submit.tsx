@@ -6,14 +6,12 @@ interface CenteredSubmitProps {
   label?: string;
   loading?: boolean;
   disabled?: boolean;
-  /** Show the trailing arrow icon. */
   withArrow?: boolean;
   type?: "submit" | "button";
   onClick?: () => void;
   className?: string;
 }
  
-/** Centered, fixed-width primary action used on single-column screens. */
 export function CenteredSubmit({
   label = "Continue",
   loading,
