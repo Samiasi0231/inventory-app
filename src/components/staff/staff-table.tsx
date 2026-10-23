@@ -11,7 +11,7 @@ const HEADERS = ["Name", "Email", "Assigned Role", "Branch", "Status"];
 
 export function StaffTable({ staff, onAction }: Props) {
   return (
-    <div className="overflow-x-auto">
+    <div className="min-w-0 max-w-full overflow-x-auto">
       <table className="w-full min-w-[720px] text-left text-xs text-gray-700">
         <thead>
           <tr className="bg-gray-50 text-[11px] font-medium text-gray-500">

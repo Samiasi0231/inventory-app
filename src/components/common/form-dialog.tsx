@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+const DIALOG_SHELL = "flex max-h-[90vh] w-[calc(100%-2rem)] max-w-2xl flex-col overflow-hidden p-0";
+
 interface FormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -15,9 +17,7 @@ interface FormDialogProps {
   className?: string;
 }
 
-export const DIALOG_SHELL =
-  "flex h-[min(680px,calc(100dvh-2rem))] w-[min(960px,calc(100vw-2rem))] max-w-none flex-col gap-0 p-0 sm:max-w-none";
-
+/** Centred dialog with a fixed header, a scrolling body and a pinned footer. */
 export function FormDialog({
   open,
   onOpenChange,
@@ -40,7 +40,7 @@ export function FormDialog({
         <div className="min-h-0 flex-1 overflow-y-auto p-6">{children}</div>
 
         {footer && (
-          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border/60 p-6 [&>*:first-child]:mr-auto">
+          <div className="flex items-center justify-between gap-3 border-t border-border/60 p-6">
             {footer}
           </div>
         )}

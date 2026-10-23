@@ -21,11 +21,11 @@ export function ContactInfoCard({
             key={r.label}
             className="flex items-start justify-between gap-6 text-xs"
           >
-            <div className="flex items-center gap-2 text-gray-700">
+            <div className="flex shrink-0 items-center gap-2 text-gray-700">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               {r.label} :
             </div>
-            <div className="max-w-[260px] text-right text-gray-900">
+            <div className="min-w-0 max-w-[260px] break-words text-right text-gray-900">
               {r.value || "—"}
             </div>
           </div>

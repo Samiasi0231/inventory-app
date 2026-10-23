@@ -28,7 +28,7 @@ function DropdownMenuContent({
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
-            "min-w-[200px] origin-[var(--transform-origin)] rounded-xl bg-popover p-1.5 text-sm text-popover-foreground shadow-lg ring-1 ring-black/5 outline-none",
+            "min-w-[200px] origin-[var(--transform-origin)] rounded-xl border border-border/60 bg-white p-1.5 text-sm text-ink-1 shadow-[0_10px_30px_rgba(47,47,47,0.12)] outline-none",
             "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
             className
           )}

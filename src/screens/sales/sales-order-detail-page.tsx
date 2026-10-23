@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DownloadIcon, EllipsisVerticalIcon, TriangleAlertIcon } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
-import { DetailRow, DetailTabs, TabPanel, TotalRow } from "@/components/common/order-detail";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAwaitingDesign } from "@/hooks/use-awaiting-design";
@@ -12,11 +12,14 @@ import { useBranch } from "@/context/branch-context";
 import { TopbarAction, TopbarBreadcrumb } from "@/layout/app-topbar";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { useAsyncResource } from "@/hooks/use-async-resource";
-import { OrderPaymentBadge, OrderStatusBadge } from "@/features/sales/components/order-status-badge";
+import { cn } from "@/lib/utils";
 import { ordersService } from "@/features/sales/orders.service";
 import {
   getOrderBalance,
   getOrderPaymentStatus,
+  ORDER_PAYMENT_LABELS,
+  ORDER_STATUS_LABELS,
+  type OrderStatus,
 } from "@/features/sales/order-types";
 
 const TABS = [
@@ -30,6 +33,14 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+const STATUS_VARIANTS: Record<OrderStatus, "success" | "danger" | "warning" | "neutral"> = {
+  completed: "success",
+  fulfilled: "success",
+  confirmed: "success",
+  partially_received: "warning",
+  pending: "neutral",
+  cancelled: "danger",
+};
 
 interface SalesOrderDetailPageProps {
   orderId: string;
@@ -110,8 +121,12 @@ export default function SalesOrderDetailPage({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-xl font-semibold text-ink-1">#{order.orderId}</h1>
-            <OrderStatusBadge status={order.status} />
-            <OrderPaymentBadge status={payment} />
+            <Badge variant={STATUS_VARIANTS[order.status]} dot>
+              {ORDER_STATUS_LABELS[order.status]}
+            </Badge>
+            <Badge variant={payment === "paid" ? "success" : "danger"} dot>
+              {ORDER_PAYMENT_LABELS[payment]}
+            </Badge>
           </div>
           <dl className="mt-4 grid gap-x-10 gap-y-2 text-sm sm:grid-cols-2">
             <DetailRow label="Customer" value={order.customerName} />
@@ -132,7 +147,24 @@ export default function SalesOrderDetailPage({
         </button>
       </section>
 
-      <DetailTabs tabs={TABS} active={tab} onChange={setTab} />
+      <nav className="flex gap-2 overflow-x-auto rounded-xl bg-surface p-2" aria-label="Order sections">
+        {TABS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            aria-current={tab === entry.id ? "page" : undefined}
+            onClick={() => setTab(entry.id)}
+            className={cn(
+              "shrink-0 rounded-lg px-4 py-2 text-sm transition-colors",
+              tab === entry.id
+                ? "bg-accent font-semibold text-accent-foreground"
+                : "text-ink-2 hover:bg-surface-muted",
+            )}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </nav>
 
       {tab === "overview" && (
         <div className="flex flex-col gap-6">
@@ -297,5 +329,51 @@ export default function SalesOrderDetailPage({
         </TabPanel>
       )}
     </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <dt className="flex items-center gap-2 text-sm text-ink-2">
+        <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />
+        {label} :
+      </dt>
+      <dd className="text-right text-sm font-medium text-ink-1">{value}</dd>
+    </div>
+  );
+}
+
+function TotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <dt className={strong ? "font-semibold text-ink-1" : "text-ink-3"}>{label}</dt>
+      <dd className={strong ? "font-semibold text-ink-1" : "text-ink-1"}>{value}</dd>
+    </div>
+  );
+}
+
+function TabPanel({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-ink-1">{title}</h2>
+          <p className="mt-1 text-sm text-ink-3">{description}</p>
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }

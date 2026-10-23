@@ -1,5 +1,6 @@
-import { AwaitingDesign } from "@/components/common/awaiting-design";
+import ReportsPage from "@/screens/reports/reports-page";
+import { reportData } from "@/features/reports/mock-data";
 
 export default function Page() {
-  return <AwaitingDesign title="Reports" reason="designers" />;
+  return <ReportsPage data={reportData.overview} />;
 }

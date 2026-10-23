@@ -9,7 +9,7 @@ import {
   TriangleAlertIcon,
 } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
-import { DetailRow, DetailTabs, TabPanel, TotalRow } from "@/components/common/order-detail";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/common/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -25,15 +25,18 @@ import { useBranch } from "@/context/branch-context";
 import { TopbarAction, TopbarBreadcrumb } from "@/layout/app-topbar";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 import { useAsyncResource } from "@/hooks/use-async-resource";
+import { cn } from "@/lib/utils";
 import { ReceiveProductsDialog } from "@/features/purchasing/components/receive-products-dialog";
 import { RecordPaymentDialog } from "@/features/purchasing/components/record-payment-dialog";
 import { RecordSupplierInvoiceDialog } from "@/features/purchasing/components/record-supplier-invoice-dialog";
 import { ReturnProductsDialog } from "@/features/purchasing/components/return-products-dialog";
 import { purchasingService } from "@/features/purchasing/purchasing.service";
-import { PurchasePaymentBadge, PurchaseStatusBadge } from "@/features/purchasing/components/purchase-status-badge";
 import {
   getPurchaseBalance,
   getPurchasePaymentStatus,
+  PURCHASE_PAYMENT_LABELS,
+  PURCHASE_STATUS_LABELS,
+  type PurchaseOrderStatus,
 } from "@/features/purchasing/types";
 
 const TABS = [
@@ -47,6 +50,21 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+const STATUS_VARIANTS: Record<
+  PurchaseOrderStatus,
+  "success" | "danger" | "warning" | "neutral" | "info"
+> = {
+  draft: "neutral",
+  pending_approval: "neutral",
+  approved: "info",
+  sent_to_supplier: "info",
+  awaiting_supplier: "warning",
+  confirmed: "success",
+  partially_received: "warning",
+  received: "success",
+  completed: "success",
+  cancelled: "danger",
+};
 
 interface PurchaseOrderDetailPageProps {
   orderId: string;
@@ -141,7 +159,9 @@ export default function PurchaseOrderDetailPage({
         <div className="min-w-0">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-semibold text-ink-1">#{order.purchaseId}</h1>
-            <PurchaseStatusBadge status={order.status} />
+            <Badge variant={STATUS_VARIANTS[order.status]} dot>
+              {PURCHASE_STATUS_LABELS[order.status]}
+            </Badge>
           </div>
           <p className="mt-2 text-xs text-ink-3">Date Created: {formatDate(order.date)}</p>
         </div>
@@ -164,7 +184,24 @@ export default function PurchaseOrderDetailPage({
         </div>
       </section>
 
-      <DetailTabs tabs={TABS} active={tab} onChange={setTab} />
+      <nav className="flex gap-2 overflow-x-auto rounded-xl bg-surface p-2" aria-label="Order sections">
+        {TABS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            aria-current={tab === entry.id ? "page" : undefined}
+            onClick={() => setTab(entry.id)}
+            className={cn(
+              "shrink-0 rounded-lg px-4 py-2 text-sm transition-colors",
+              tab === entry.id
+                ? "bg-accent font-semibold text-accent-foreground"
+                : "text-ink-2 hover:bg-surface-muted",
+            )}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </nav>
 
       {tab === "overview" && (
         <>
@@ -201,7 +238,9 @@ export default function PurchaseOrderDetailPage({
                 <div className="flex items-center justify-between">
                   <dt className="text-ink-3">Payment Status</dt>
                   <dd>
-                    <PurchasePaymentBadge status={payment} />
+                    <Badge variant={payment === "paid" ? "success" : "danger"}>
+                      {PURCHASE_PAYMENT_LABELS[payment]}
+                    </Badge>
                   </dd>
                 </div>
                 <TotalRow label="Amount Paid" value={formatCurrency(order.amountPaid)} />
@@ -388,5 +427,51 @@ export default function PurchaseOrderDetailPage({
         onSuccess={refetch}
       />
     </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <dt className="flex items-center gap-2 text-sm text-ink-2">
+        <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />
+        {label} :
+      </dt>
+      <dd className="text-right text-sm font-medium text-ink-1">{value}</dd>
+    </div>
+  );
+}
+
+function TotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <dt className={strong ? "font-semibold text-ink-1" : "text-ink-3"}>{label}</dt>
+      <dd className={strong ? "font-semibold text-ink-1" : "text-ink-1"}>{value}</dd>
+    </div>
+  );
+}
+
+function TabPanel({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-ink-1">{title}</h2>
+          <p className="mt-1 text-sm text-ink-3">{description}</p>
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }

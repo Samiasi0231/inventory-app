@@ -85,6 +85,9 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  select {
+    background-color: #fff;
+  }
 }
 
 

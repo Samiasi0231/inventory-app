@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -23,17 +24,34 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { OrderPaymentBadge, OrderStatusBadge } from "./order-status-badge";
 import type { SortDirection } from "@/types/shared";
 import {
   getOrderActions,
   getOrderBalance,
   getOrderPaymentStatus,
+  ORDER_PAYMENT_LABELS,
+  ORDER_STATUS_LABELS,
   type OrderAction,
+  type OrderPaymentStatus,
+  type OrderStatus,
   type SalesOrder,
 } from "../order-types";
 
+const PAYMENT_VARIANTS: Record<OrderPaymentStatus, "success" | "danger" | "warning" | "neutral"> = {
+  paid: "success",
+  unpaid: "danger",
+  partially_paid: "warning",
+  refunded: "neutral",
+};
 
+const STATUS_VARIANTS: Record<OrderStatus, "success" | "danger" | "warning" | "neutral"> = {
+  completed: "success",
+  fulfilled: "success",
+  confirmed: "success",
+  partially_received: "warning",
+  pending: "neutral",
+  cancelled: "danger",
+};
 
 interface Column {
   id: string;
@@ -146,10 +164,14 @@ export function OrdersTable({
                     {balance > 0 ? formatCurrency(balance) : "-"}
                   </TableCell>
                   <TableCell className="w-[128px]">
-                    <OrderPaymentBadge status={payment} />
+                    <Badge variant={PAYMENT_VARIANTS[payment]} dot>
+                      {ORDER_PAYMENT_LABELS[payment]}
+                    </Badge>
                   </TableCell>
                   <TableCell className="w-[150px]">
-                    <OrderStatusBadge status={order.status} />
+                    <Badge variant={STATUS_VARIANTS[order.status]} dot>
+                      {ORDER_STATUS_LABELS[order.status]}
+                    </Badge>
                   </TableCell>
                   <TableCell className="w-[78px] text-center">
                     <div className="flex justify-center">
