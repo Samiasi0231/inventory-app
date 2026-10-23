@@ -119,23 +119,25 @@ input:autofill:focus {
   box-shadow: 0 0 0 1000px #e6fff3 inset;
   border-color: #008c4b;
 }
+/*auth icon float*/
+@keyframes float {
 
-@media print {
-  body * {
-    visibility: hidden;
+  0%,
+  100% {
+    transform: translateY(0);
   }
-  .receipt-print,
-  .receipt-print * {
-    visibility: visible;
-  }
-  .receipt-print {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    max-width: none;
-    min-height: 0;
-    margin: 0;
-    padding: 24px;
+
+  50% {
+    transform: translateY(-10px);
   }
 }
 
+.animate-float {
+  animation: float var(--float-duration, 4s) ease-in-out var(--float-delay, 0s) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float {
+    animation: none;
+  }
+}

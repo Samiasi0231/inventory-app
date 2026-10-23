@@ -6,6 +6,7 @@ import { CenteredHeading } from "@/components/auth";
 import { useOnboarding } from "@/context/onboarding-context";
 import { VerifyCodeForm } from "@/features/auth/verify-code-form";
 import { authApi } from "@/lib/api";
+import { BackLink } from "@/components/auth";
 
 export default function ForgotPasswordVerifyPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function ForgotPasswordVerifyPage() {
 
   return (
     <section>
+       <BackLink to="/forgot-password/reset">Back</BackLink>
       <CenteredHeading
         title="Verify code"
         description={`Enter verification code sent to ${email}`}

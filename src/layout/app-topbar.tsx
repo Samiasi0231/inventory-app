@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
-import { BellIcon, CircleHelpIcon, MenuIcon, SearchIcon } from "lucide-react";
+import { BellIcon, HelpCircle, MenuIcon, SearchIcon } from "lucide-react";
 import { NAV_ITEMS } from "@/layout/nav-config";
 import { cn } from "@/lib/utils";
 
@@ -140,7 +140,7 @@ export function AppTopbar({ onOpenSidebar, className }: AppTopbarProps) {
           aria-label="Help"
           className="hidden size-[42px] items-center justify-center rounded-full border border-border text-ink-2 transition-colors hover:bg-surface-muted sm:flex"
         >
-          <CircleHelpIcon className="size-6" />
+        <HelpCircle className="size-6" />
         </button>
         <div id={TOPBAR_ACTION_SLOT_ID} className="flex min-w-0 flex-wrap items-center gap-2" />
       </div>
