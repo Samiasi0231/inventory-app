@@ -1,6 +1,6 @@
 "use client";
 
-import ResetPasswordPage from "@/screens/reset-password-page";
+import ResetPasswordPage from "@/screens/auth/reset-password-page";
 
 export default function Page() {
   return <ResetPasswordPage />;

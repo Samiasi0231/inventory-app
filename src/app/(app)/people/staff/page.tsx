@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import StaffPage from "@/screens/staff-page";
+import StaffPage from "@/screens/staff/staff-page";
 
 export default function Page() {
   return (

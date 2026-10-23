@@ -1,6 +1,6 @@
 "use client";
 
-import VerifiedPage from "@/screens/verify-page";
+import VerifiedPage from "@/screens/auth/verify-page";
 
 export default function Page() {
   return <VerifiedPage />;

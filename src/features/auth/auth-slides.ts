@@ -6,7 +6,6 @@ import secretary from "@/assets/images/secretary.png";
 
 export interface AuthSlideChip {
   label: string;
-  /** Position + colour classes for the floating pill. */
   className: string;
 }
 
@@ -18,7 +17,6 @@ export interface AuthSlideFloater {
 
 export interface AuthSlide {
   id: string;
-  /** Imported image (StaticImageData) or a path under /public. */
   image: StaticImageData | string;
   gradient: string;
   title: string;
@@ -27,8 +25,6 @@ export interface AuthSlide {
   floaters?: AuthSlideFloater[];
 }
 
-// One image per slide. Swap the imports below to match your design:
-// "all" and "simple" currently share `secretary` — replace one with your 4th image.
 export const authSlides: AuthSlide[] = [
   {
     id: "know",
@@ -36,6 +32,24 @@ export const authSlides: AuthSlide[] = [
     gradient: "from-emerald-900 via-emerald-800 to-neutral-900",
     title: "Know what's happening.",
     subtitle: "Track your business in real time and make informed decisions with ease.",
+    chips: [
+      {
+        label: "Branch Tracking",
+        className: "animate-float [--float-delay:0s] [--float-duration:4s] right-[12%] top-[28%] bg-indigo-50 text-indigo-700",
+      },
+      {
+        label: "Inventory Tracker",
+        className: "animate-float [--float-delay:0.8s] [--float-duration:5s] left-[6%] top-[52%] bg-fuchsia-50 text-fuchsia-700",
+      },
+      {
+        label: "Sales Purchase Orders",
+        className: "animate-float [--float-delay:1.6s] [--float-duration:4.5s] right-[4%] top-[52%] bg-amber-50 text-amber-700",
+      },
+      {
+        label: "Staff Management",
+        className: "animate-float [--float-delay:0.4s] [--float-duration:5.5s] left-[34%] top-[60%] bg-emerald-50 text-emerald-700",
+      },
+    ],
   },
   {
     id: "grow",
@@ -57,10 +71,22 @@ export const authSlides: AuthSlide[] = [
     title: "Your business, all in one place.",
     subtitle: "Manage sales, inventory, purchases, customers and your team from one platform.",
     chips: [
-      { label: "Branch Tracking", className: "right-[12%] top-[28%] bg-indigo-50 text-indigo-700" },
-      { label: "Inventory Tracker", className: "left-[6%] top-[52%] bg-fuchsia-50 text-fuchsia-700" },
-      { label: "Sales Purchase Orders", className: "right-[4%] top-[52%] bg-amber-50 text-amber-700" },
-      { label: "Staff Management", className: "left-[34%] top-[70%] bg-emerald-50 text-emerald-700" },
+      {
+        label: "Branch Tracking",
+        className: "animate-float [--float-delay:0s] [--float-duration:4s] right-[12%] top-[28%] bg-indigo-50 text-indigo-700",
+      },
+      {
+        label: "Inventory Tracker",
+        className: "animate-float [--float-delay:0.8s] [--float-duration:5s] left-[6%] top-[52%] bg-fuchsia-50 text-fuchsia-700",
+      },
+      {
+        label: "Sales Purchase Orders",
+        className: "animate-float [--float-delay:1.6s] [--float-duration:4.5s] right-[4%] top-[52%] bg-amber-50 text-amber-700",
+      },
+      {
+        label: "Staff Management",
+        className: "animate-float [--float-delay:0.4s] [--float-duration:5.5s] left-[34%] top-[60%] bg-emerald-50 text-emerald-700",
+      },
     ],
   },
   {
@@ -69,6 +95,24 @@ export const authSlides: AuthSlide[] = [
     gradient: "from-rose-900 via-neutral-800 to-neutral-900",
     title: "All in one system to keep operations simple",
     subtitle: "Sign Up to log your inventory",
+    chips: [
+      {
+        label: "Branch Tracking",
+        className: "animate-float [--float-delay:0s] [--float-duration:4s] right-[12%] top-[28%] bg-indigo-50 text-indigo-700",
+      },
+      {
+        label: "Inventory Tracker",
+        className: "animate-float [--float-delay:0.8s] [--float-duration:5s] left-[6%] top-[52%] bg-fuchsia-50 text-fuchsia-700",
+      },
+      {
+        label: "Sales Purchase Orders",
+        className: "animate-float [--float-delay:1.6s] [--float-duration:4.5s] right-[4%] top-[52%] bg-amber-50 text-amber-700",
+      },
+      {
+        label: "Staff Management",
+        className: "animate-float [--float-delay:0.4s] [--float-duration:5.5s] left-[34%] top-[60%] bg-emerald-50 text-emerald-700",
+      },
+    ],
   },
 ];
 

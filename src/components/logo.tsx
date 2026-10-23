@@ -1,7 +1,7 @@
 
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/images/riin-logo.svg.svg";
+import logo from "@/assets/images/riin-logo.svg";
 
 export function Logo({ className }: { className?: string }) {
   return (

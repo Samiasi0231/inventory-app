@@ -10,11 +10,8 @@ import { verifyCodeSchema, type VerifyCodeValues } from "./auth.schema";
 const RESEND_SECONDS = 60;
  
 interface VerifyCodeFormProps {
-  /** Verify the code. Throw to show the "invalid code" error. */
   onVerify: (code: string) => Promise<void>;
-  /** Request a new code. Throw to show the "couldn't resend" error. */
   onResend: () => Promise<void>;
-  /** Centered narrow button (single-column screens) instead of full width. */
   centered?: boolean;
 }
  
