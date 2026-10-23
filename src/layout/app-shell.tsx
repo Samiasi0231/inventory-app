@@ -17,7 +17,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
       <BranchProvider>
-        <div className="flex min-h-screen bg-surface-muted">
+        <div className="flex min-h-dvh bg-surface-muted">
           <AppSidebar className="sticky top-0 hidden h-screen lg:flex" />
 
           {mobileNavOpen && (
@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 onClick={() => setMobileNavOpen(false)}
                 className="absolute inset-0 bg-black/30"
               />
-              <div className="absolute inset-y-0 left-0 flex">
+              <div className="absolute inset-y-0 left-0 flex" onClick={(event) => { if ((event.target as HTMLElement).closest("a")) setMobileNavOpen(false); }}>
                 <AppSidebar className="h-screen" />
                 <button
                   type="button"
@@ -44,7 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className="flex min-w-0 flex-1 flex-col">
             <AppTopbar onOpenSidebar={() => setMobileNavOpen(true)} />
-            <main className="min-w-0 flex-1 p-4 lg:p-8">{children}</main>
+            <main className="dashboard-content min-w-0 flex-1 p-4 lg:p-8">{children}</main>
           </div>
         </div>
         <Toaster />

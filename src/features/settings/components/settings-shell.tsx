@@ -46,20 +46,20 @@ export function SettingsShell({ title, description, action, children }: Settings
   const router = useRouter();
 
   return (
-    <div className="flex h-dvh min-w-0 overflow-hidden bg-surface">
-      <aside className="hidden w-[240px] shrink-0 flex-col border-r border-border/60 lg:flex">
-        <div className="p-5 pb-4">
+    <div className="settings-shell">
+      <aside className="settings-sidebar">
+        <div className="settings-sidebar-heading">
           <Link
             href="/dashboard"
-            className="flex w-fit items-center gap-2 text-sm text-ink-2 transition-colors hover:text-primary"
+            className="settings-home"
           >
             <ArrowLeftIcon className="size-4" />
             Home
           </Link>
-          <h2 className="mt-3 text-xl font-semibold text-ink-1">Settings</h2>
+          <h2 className="settings-sidebar-title">Settings</h2>
         </div>
 
-        <nav aria-label="Settings sections" className="flex flex-1 flex-col gap-1 px-3">
+        <nav aria-label="Settings sections" className="settings-navigation">
           {SETTINGS_NAV.map((entry) => {
             const active =
               entry.href === "/settings"
@@ -71,7 +71,7 @@ export function SettingsShell({ title, description, action, children }: Settings
                 href={entry.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "rounded-lg px-4 py-2.5 text-sm transition-colors",
+                  "settings-nav-link",
                   active
                     ? "bg-accent font-medium text-accent-foreground"
                     : "text-ink-1 hover:bg-surface-muted",
@@ -83,7 +83,7 @@ export function SettingsShell({ title, description, action, children }: Settings
           })}
         </nav>
 
-        <div className="flex items-center gap-2.5 border-t border-border/60 px-4 py-5">
+        <div className="settings-persona">
           <span
             aria-hidden
             className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink-1 text-sm font-semibold text-surface"
@@ -91,8 +91,8 @@ export function SettingsShell({ title, description, action, children }: Settings
             {CURRENT_USER.name.charAt(0)}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] text-ink-1">{CURRENT_USER.name}</p>
-            <p className="text-xs text-ink-3">{ROLE_LABELS[CURRENT_USER.role]}</p>
+            <p className="truncate text-[12px] text-ink-1">{CURRENT_USER.name}</p>
+            <p className="text-[10px] text-ink-3">{ROLE_LABELS[CURRENT_USER.role]}</p>
           </div>
           <button
             type="button"
@@ -105,18 +105,18 @@ export function SettingsShell({ title, description, action, children }: Settings
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="settings-main">
         <SettingsNavSelect />
 
-        <header className="flex flex-col gap-4 border-b border-border/60 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <header className="settings-header">
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-ink-1">{title}</h1>
-            <p className="mt-1 text-sm text-ink-3">{description}</p>
+            <h1 className="settings-page-title">{title}</h1>
+            <p className="settings-page-description">{description}</p>
           </div>
           {action && <div className="shrink-0">{action}</div>}
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-surface-muted/60 p-6">{children}</div>
+        <div className="settings-content">{children}</div>
       </div>
     </div>
   );
@@ -132,7 +132,7 @@ function SettingsNavSelect() {
       </label>
       <select
         id="settings-area"
-        value={SETTINGS_NAV.find((entry) => pathname.startsWith(entry.href))?.href ?? "/settings"}
+        value={SETTINGS_NAV.find((entry) => entry.href === "/settings" ? pathname === entry.href : pathname.startsWith(entry.href))?.href ?? "/settings"}
         onChange={(event) => router.push(event.target.value)}
         className="h-[42px] w-full rounded-lg border border-border bg-surface px-3 text-sm text-ink-1"
       >

@@ -23,6 +23,7 @@ export interface NavItem {
   children?: NavChild[];
 }
 
+/** Sidebar structure. */
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", icon: LayoutGridIcon, href: "/dashboard" },
   {
@@ -45,6 +46,7 @@ export const NAV_ITEMS: NavItem[] = [
       { label: "Invoices", href: "/sales/invoices" },
       { label: "Payments", href: "/sales/payments" },
       { label: "Receipts", href: "/sales/receipts" },
+      { label: "Credit Notes", href: "/sales/credit-notes" },
     ],
   },
   { label: "Approvals", icon: ClipboardCheckIcon, href: "/approvals" },

@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -32,13 +33,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { PurchasePaymentBadge, PurchaseStatusBadge } from "./purchase-status-badge";
 import type { SortDirection } from "@/types/shared";
 import {
   getPurchaseActions,
   getPurchasePaymentStatus,
+  PURCHASE_PAYMENT_LABELS,
+  PURCHASE_STATUS_LABELS,
   type PurchaseAction,
   type PurchaseOrder,
+  type PurchaseOrderStatus,
+  type PurchasePaymentStatus,
 } from "../types";
 
 const ACTION_ICONS: Record<PurchaseAction, typeof EyeIcon> = {
@@ -59,6 +63,29 @@ const ACTION_ICONS: Record<PurchaseAction, typeof EyeIcon> = {
   cancel: BanIcon,
 };
 
+const PAYMENT_VARIANTS: Record<PurchasePaymentStatus, "success" | "danger" | "warning" | "neutral"> =
+  {
+    paid: "success",
+    unpaid: "danger",
+    partially_paid: "warning",
+    refunded: "neutral",
+  };
+
+const STATUS_VARIANTS: Record<
+  PurchaseOrderStatus,
+  "success" | "danger" | "warning" | "neutral" | "info"
+> = {
+  draft: "neutral",
+  pending_approval: "neutral",
+  approved: "info",
+  sent_to_supplier: "info",
+  awaiting_supplier: "warning",
+  confirmed: "success",
+  partially_received: "warning",
+  received: "success",
+  completed: "success",
+  cancelled: "danger",
+};
 
 interface Column {
   id: string;
@@ -174,10 +201,14 @@ export function PurchaseOrdersTable({
                   </TableCell>
                   <TableCell className="w-[90px]">{formatNumber(order.fulfilled)}</TableCell>
                   <TableCell className="w-[125px]">
-                    <PurchasePaymentBadge status={payment} />
+                    <Badge variant={PAYMENT_VARIANTS[payment]} dot>
+                      {PURCHASE_PAYMENT_LABELS[payment]}
+                    </Badge>
                   </TableCell>
                   <TableCell className="w-[155px]">
-                    <PurchaseStatusBadge status={order.status} />
+                    <Badge variant={STATUS_VARIANTS[order.status]} dot>
+                      {PURCHASE_STATUS_LABELS[order.status]}
+                    </Badge>
                   </TableCell>
                   <TableCell className="w-[78px] text-center">
                     <div className="flex justify-center">

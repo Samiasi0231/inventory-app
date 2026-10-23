@@ -27,16 +27,6 @@ const STATUS_CYCLE: PurchaseOrderStatus[] = [
   "cancelled",
 ];
 
-const NOT_RECEIVING: PurchaseOrderStatus[] = [
-  "draft",
-  "pending_approval",
-  "approved",
-  "sent_to_supplier",
-  "awaiting_supplier",
-  "confirmed",
-  "cancelled",
-];
-
 const OTHER_COSTS = [0, 50_000, 0, 25_000, 0, 15_000];
 
 const VARIANTS = [
@@ -72,10 +62,13 @@ function buildLines(index: number, mode: ReceiptMode): PurchaseOrderLine[] {
 function buildOrder(index: number): PurchaseOrder {
   const status = STATUS_CYCLE[index % STATUS_CYCLE.length];
   const supplier = MOCK_SUPPLIERS[index % MOCK_SUPPLIERS.length];
-  const notReceiving = NOT_RECEIVING.includes(status);
   const lines = buildLines(
     index,
-    notReceiving ? "none" : status === "partially_received" ? "partial" : "full",
+    status === "pending_approval" || status === "cancelled"
+      ? "none"
+      : status === "partially_received"
+        ? "partial"
+        : "full",
   );
 
   const subtotal = lines.reduce((sum, line) => sum + line.ordered * line.unitCost, 0);
@@ -85,11 +78,14 @@ function buildOrder(index: number): PurchaseOrder {
 
   const fulfilled = lines.reduce((sum, line) => sum + line.received, 0);
 
-  const amountPaid = notReceiving
-    ? 0
-    : status === "partially_received"
-      ? Math.round(totalAmount / 2)
-      : totalAmount;
+  const amountPaid =
+    status === "cancelled"
+      ? 0
+      : status === "pending_approval"
+        ? 0
+        : status === "partially_received"
+          ? Math.round(totalAmount / 2)
+          : totalAmount;
 
   return {
     id: `po_${index + 1}`,

@@ -1,0 +1,7 @@
+.approvals-page [data-slot="table-cell"] { border-bottom: 0; }
+.approvals-page tbody tr:last-child td { border-bottom: 1px solid #ddd; }
+.approval-status { display: inline-flex; white-space: nowrap; border-radius: 999px; padding: 4px 8px; font-size: 12px; line-height: 16px; letter-spacing: .18px; }
+.approval-status-pending { background: #fff9e6; color: #946b00; }
+.approval-status-approved { background: #e6fff3; color: #008c4b; }
+.approval-status-rejected { background: #ffe7e8; color: #e80d14; }
+.approvals-page :is(button, a, input, select):focus-visible { outline: 2px solid #008c4b; outline-offset: 3px; }

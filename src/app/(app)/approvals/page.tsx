@@ -1,5 +1,5 @@
-import { AwaitingDesign } from "@/components/common/awaiting-design";
+import ApprovalsPage from "@/screens/approvals-page";
 
 export default function Page() {
-  return <AwaitingDesign title="Approvals" reason="designers" />;
+  return <ApprovalsPage />;
 }

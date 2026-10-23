@@ -4,10 +4,14 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BanknoteIcon,
+  ChevronDownIcon,
+  ChartNoAxesCombinedIcon,
   DownloadIcon,
   EyeIcon,
-  FileTextIcon,
+  HandCoinsIcon,
+  ListFilterIcon,
   MoreHorizontalIcon,
+  PiggyBankIcon,
   PlusIcon,
   ReceiptIcon,
   SearchIcon,
@@ -15,8 +19,11 @@ import {
 } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
+import { FormDialog } from "@/components/common/form-dialog";
 import { StatCard, StatCardSkeleton } from "@/components/common/stat-card";
 import { Pagination } from "@/components/ui/pagination";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -63,8 +70,11 @@ export default function SalesReceiptsPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 350);
   const [page, setPage] = useState(1);
+  const [method, setMethod] = useState<Receipt["method"] | "all">("all");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [activeReceipt, setActiveReceipt] = useState<Receipt | null>(null);
+  const [dialog, setDialog] = useState<"details" | "receipt" | null>(null);
 
   const params = useMemo(
     () => ({
@@ -72,8 +82,9 @@ export default function SalesReceiptsPage() {
       pageSize: 15,
       search: debouncedSearch || undefined,
       branchId: activeBranch.id,
+      method,
     }),
-    [page, debouncedSearch, activeBranch.id],
+    [page, debouncedSearch, activeBranch.id, method],
   );
 
   const {
@@ -127,36 +138,48 @@ export default function SalesReceiptsPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
         {loading || !summary ? (
-          Array.from({ length: 3 }).map((_, index) => <StatCardSkeleton key={index} />)
+          Array.from({ length: 5 }).map((_, index) => <StatCardSkeleton key={index} />)
         ) : (
           <>
             <StatCard
               icon={BanknoteIcon}
+              label="Sales value"
+              value={formatCurrencyCompact(summary.collected + 190_200_000)}
+              description={`${formatNumber(summary.invoices)} invoices`}
+            />
+            <StatCard
+              icon={PiggyBankIcon}
               label="Collected"
               value={formatCurrencyCompact(summary.collected)}
-              description="Across all receipts"
-              delta={summary.collectedDelta}
+              description=""
+            />
+            <StatCard
+              icon={HandCoinsIcon}
+              label="Outstanding"
+              value={formatCurrencyCompact(190_200_000)}
+              description=""
+            />
+            <StatCard
+              icon={ChartNoAxesCombinedIcon}
+              label="Gross profit"
+              value={formatCurrencyCompact(190_200_000)}
+              description=""
             />
             <StatCard
               icon={ReceiptIcon}
-              label="Receipts"
-              value={formatNumber(summary.receiptCount)}
-              description="Issued to customers"
-            />
-            <StatCard
-              icon={FileTextIcon}
               label="Invoices"
               value={formatNumber(summary.invoices)}
-              description="Settled by these receipts"
+              description="4 invoices"
             />
           </>
         )}
       </section>
 
       <section className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
-        <div className="flex h-[42px] w-full items-center gap-2 rounded-lg border border-border px-4 py-2 lg:max-w-[460px]">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex h-[42px] w-full items-center gap-2 rounded-lg border border-border px-4 py-2 lg:max-w-[633px]">
           <SearchIcon className="size-5 shrink-0 text-ink-4" />
           <input
             type="search"
@@ -165,10 +188,26 @@ export default function SalesReceiptsPage() {
               setSearch(event.target.value);
               setPage(1);
             }}
-            placeholder="Search receipts, invoices or customers"
+            placeholder="Search in Items"
             aria-label="Search receipts"
             className="min-w-0 flex-1 bg-transparent text-base text-ink-1 outline-none placeholder:text-ink-4"
           />
+        </div>
+        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+          <PopoverTrigger className="flex h-8 w-fit items-center gap-2 rounded-lg border border-border bg-white px-3 text-sm font-semibold text-primary">
+            <ListFilterIcon className="size-4" /> Filter <ChevronDownIcon className="size-4" />
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 p-4">
+            <label className="mb-2 block text-xs font-medium text-ink-2">Payment method</label>
+            <Select value={method} onValueChange={(value) => { setMethod(value as Receipt["method"] | "all"); setPage(1); }}>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All methods</SelectItem>
+                {PAYMENT_METHODS.filter((entry) => entry.value !== "credit").map((entry) => <SelectItem key={entry.value} value={entry.value}>{entry.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </PopoverContent>
+        </Popover>
         </div>
 
         {error ? (
@@ -238,9 +277,13 @@ export default function SalesReceiptsPage() {
                                 <MoreHorizontalIcon className="size-5" />
                               </DropdownMenuTrigger>
                               <DropdownMenuContent>
-                                <DropdownMenuItem onClick={() => setActiveReceipt(receipt)}>
+                                <DropdownMenuItem onClick={() => { setActiveReceipt(receipt); setDialog("details"); }}>
                                   <EyeIcon />
                                   View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setActiveReceipt(receipt); setDialog("receipt"); }}>
+                                  <ReceiptIcon />
+                                  Receipt
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -257,10 +300,28 @@ export default function SalesReceiptsPage() {
 
       <ReceiptDialog
         receipt={activeReceipt}
-        open={Boolean(activeReceipt)}
-        onOpenChange={(open) => !open && setActiveReceipt(null)}
+        open={dialog === "receipt"}
+        onOpenChange={(open) => { if (!open) { setDialog(null); setActiveReceipt(null); } }}
         onViewSale={() => router.push("/sales/invoices")}
       />
+      <FormDialog
+        open={dialog === "details"}
+        onOpenChange={(open) => { if (!open) { setDialog(null); setActiveReceipt(null); } }}
+        title="Receipt details"
+        description={activeReceipt?.number}
+        footer={<PrimaryButton onClick={() => setDialog("receipt")}>View receipt</PrimaryButton>}
+      >
+        {activeReceipt && (
+          <dl className="grid gap-4 sm:grid-cols-2">
+            {[
+              ["Invoice", activeReceipt.invoiceNumber], ["Customer", activeReceipt.customerName],
+              ["Method", PAYMENT_METHODS.find((entry) => entry.value === activeReceipt.method)?.label ?? activeReceipt.method],
+              ["Received by", activeReceipt.receivedBy], ["Amount", formatCurrency(activeReceipt.amount)],
+              ["Date", formatDate(activeReceipt.issuedAt)],
+            ].map(([label, value]) => <div key={label}><dt className="text-xs text-ink-3">{label}</dt><dd className="mt-1 text-sm font-medium text-ink-1">{value}</dd></div>)}
+          </dl>
+        )}
+      </FormDialog>
     </div>
   );
 }

@@ -16,20 +16,21 @@ export function ListToolbar({
   children,
 }: Props) {
   return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <div className="relative w-full max-w-[400px]">
+    <div className="mb-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+      <div className="relative w-full max-w-[633px]">
         <Search
-          size={14}
+          size={18}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
         />
         <input
+          aria-label={placeholder}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={placeholder}
-          className="h-9 w-full rounded-md border border-gray-200 pl-9 pr-3 text-xs outline-none focus:border-emerald-600"
+          className="h-[42px] w-full rounded-lg border border-border bg-transparent pl-10 pr-3 text-base text-ink-1 outline-none placeholder:text-ink-4 focus:border-primary"
         />
       </div>
-      <div className="flex items-center gap-2">{children}</div>
+      <div className="flex flex-wrap items-center gap-2">{children}</div>
     </div>
   );
 }

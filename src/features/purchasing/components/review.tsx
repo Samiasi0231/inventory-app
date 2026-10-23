@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { formatDate, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export function ReviewCard({ title, children }: { title: string; children: ReactNode }) {
@@ -32,7 +32,13 @@ export function GrandTotalBar({ amount }: { amount: number }) {
   );
 }
 
+const reviewDateFormatter = new Intl.DateTimeFormat("en-NG", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
 export function formatReviewDate(value: string | undefined, fallback = "—") {
   if (!value) return fallback;
-  return formatDate(value);
+  return reviewDateFormatter.format(new Date(value));
 }

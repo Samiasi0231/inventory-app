@@ -1,13 +1,16 @@
+"use client";
+
+import { use } from "react";
 import SalesOrderDetailPage from "@/screens/sales/sales-order-detail-page";
 
-export default async function Page({
+export default function Page({
   params,
   searchParams,
 }: {
   params: Promise<{ orderId: string }>;
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const { orderId } = await params;
-  const { tab } = await searchParams;
+  const { orderId } = use(params);
+  const { tab } = use(searchParams);
   return <SalesOrderDetailPage orderId={orderId} initialTab={tab} />;
 }

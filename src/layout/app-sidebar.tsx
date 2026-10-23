@@ -24,6 +24,9 @@ const ROLE_LABELS: Record<User["role"], string> = {
 };
 
 function isItemActive(item: NavItem, pathname: string) {
+  if (item.label === "Transactions" && (pathname.startsWith("/sales") || pathname.startsWith("/purchasing"))) {
+    return true;
+  }
   if (item.children?.some((child) => pathname.startsWith(child.href))) return true;
   return item.href ? pathname.startsWith(item.href) : false;
 }

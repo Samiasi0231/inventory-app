@@ -83,7 +83,8 @@ export function SignInForm() {
  
       <FormAlert message={serverError} />
  
-      <PrimaryButton type="submit" fullWidth loading={isSubmitting} className="mt-2">
+      <PrimaryButton type="submit" fullWidth loading={isSubmitting} 
+      className="mt-2">
         Sign In
       </PrimaryButton>
  

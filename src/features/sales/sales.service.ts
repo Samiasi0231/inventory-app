@@ -198,7 +198,7 @@ export const salesService = {
     return {
       invoiceId: created.id,
       invoiceNumber: number,
-      receiptNumber: `RCP-2026-${String(sequence).padStart(4, "0")}`,
+      receiptNumber: `RCT-${String(sequence).padStart(5, "0")}`,
       total,
     };
   },
