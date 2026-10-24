@@ -28,16 +28,18 @@ interface AddProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  initialValues?: AddProductValues;
+  itemId?: string;
 }
 
-export function AddProductDialog({ open, onOpenChange, onSuccess }: AddProductDialogProps) {
+export function AddProductDialog({ open, onOpenChange, onSuccess, initialValues, itemId }: AddProductDialogProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const { activeBranch } = useBranch();
   const toast = useToast();
 
   const form = useForm<AddProductValues>({
     resolver: zodResolver(addProductSchema),
-    defaultValues: ADD_PRODUCT_DEFAULTS,
+    defaultValues: initialValues ?? ADD_PRODUCT_DEFAULTS,
     mode: "onTouched",
   });
 
@@ -46,7 +48,7 @@ export function AddProductDialog({ open, onOpenChange, onSuccess }: AddProductDi
   /** Clear the wizard on close so the next one starts from a blank form. */
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
-      reset(ADD_PRODUCT_DEFAULTS);
+      reset(initialValues ?? ADD_PRODUCT_DEFAULTS);
       setStepIndex(0);
     }
     onOpenChange(nextOpen);
@@ -75,7 +77,7 @@ export function AddProductDialog({ open, onOpenChange, onSuccess }: AddProductDi
       const overrides = values.variantOverrides ?? [];
       const openingStock = values.openingStock ?? [];
 
-      await inventoryService.createProduct({
+      await inventoryService.saveProduct(itemId, values, {
         name: values.name,
         type: values.type,
         sku: values.sku,
@@ -119,7 +121,7 @@ export function AddProductDialog({ open, onOpenChange, onSuccess }: AddProductDi
 
       toast.add({
         type: "success",
-        title: "Product created",
+        title: itemId ? "Product updated" : "Product created",
         description: `${values.name} has been added to your inventory.`,
       });
       handleOpenChange(false);
@@ -131,13 +133,17 @@ export function AddProductDialog({ open, onOpenChange, onSuccess }: AddProductDi
         description: "Something went wrong. Please check the details and try again.",
       });
     }
+  }, (errors) => {
+    const invalidStep = STEP_FIELDS.findIndex(fields => fields.some(field => field in errors));
+    if (invalidStep >= 0) setStepIndex(invalidStep);
   });
 
   return (
     <FormDialog
       open={open}
       onOpenChange={handleOpenChange}
-      title="Add Product"
+      title={itemId ? "Edit Product" : "Add Product"}
+      className="product-wizard"
       description="Manage your products and track stock across your branches."
       footer={
         <>
@@ -151,7 +157,7 @@ export function AddProductDialog({ open, onOpenChange, onSuccess }: AddProductDi
 
           {isLastStep ? (
             <PrimaryButton onClick={onSubmit} loading={formState.isSubmitting}>
-              Create Product
+              {itemId ? "Save Product" : "Create Product"}
             </PrimaryButton>
           ) : (
             <PrimaryButton onClick={goNext} rightIcon={<ArrowRightIcon className="size-4" />}>

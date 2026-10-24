@@ -8,13 +8,13 @@ import type { SellableProduct } from "../types";
 
 /** Stock pill: services carry no stock, so they read as "Service". */
 function StockPill({ product }: { product: SellableProduct }) {
-  if (product.isService) return <Badge variant="neutral">Service</Badge>;
+  if (product.isService) return <Badge variant="neutral" className="new-sale-stock">Service</Badge>;
   if (product.stock === null) return null;
-  if (product.stock <= 0) return <Badge variant="danger">Out of stock</Badge>;
+  if (product.stock <= 0) return <Badge variant="danger" className="new-sale-stock">Out of stock</Badge>;
   if (product.stock <= LOW_STOCK_THRESHOLD) {
-    return <Badge variant="warning">Low · {product.stock} left</Badge>;
+    return <Badge variant="warning" className="new-sale-stock">Low · {product.stock} left</Badge>;
   }
-  return <Badge variant="success">{formatNumber(product.stock)} in stock</Badge>;
+  return <Badge variant="success" className="new-sale-stock">{formatNumber(product.stock)} in stock</Badge>;
 }
 
 interface ProductCardProps {
@@ -31,7 +31,7 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
       disabled={soldOut}
       onClick={() => onSelect(product)}
       className={cn(
-        "flex min-h-[145px] flex-col items-start gap-2 rounded-xl border border-border/70 bg-white p-4 text-left shadow-[0_1px_3px_rgba(47,47,47,0.12)] transition-[border-color,background-color,transform,box-shadow]",
+        "new-sale-product-card flex min-h-[145px] flex-col items-start gap-2 rounded-xl border border-border/70 bg-white p-4 text-left shadow-[0_1px_3px_rgba(47,47,47,0.12)] transition-[border-color,background-color,transform,box-shadow]",
         "focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/20 focus-visible:outline-none",
         soldOut ? "cursor-not-allowed opacity-55" : "hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-[0_5px_14px_rgba(0,140,75,0.09)] active:translate-y-0",
       )}

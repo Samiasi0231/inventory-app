@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import {
   DownloadIcon,
-  FolderSearchIcon,
   PackageIcon,
   PlusIcon,
   SearchIcon,
@@ -12,10 +11,11 @@ import {
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
 import { FormDialog } from "@/components/common/form-dialog";
-import { StatCard, StatCardSkeleton } from "@/components/common/stat-card";
+import { InventoryStatCard } from "@/features/inventory/components/inventory-stat-card";
+import { StatCardSkeleton } from "@/components/common/stat-card";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
-import { useAwaitingDesign } from "@/hooks/use-awaiting-design";
+import { ProductDetails } from "@/features/inventory/components/product-details";
 import { useBranch } from "@/context/branch-context";
 import { BranchSelector } from "@/layout/branch-selector";
 import { TopbarAction } from "@/layout/app-topbar";
@@ -53,7 +53,7 @@ export default function InventoryProductsPage({
 }: InventoryProductsPageProps) {
   const { activeBranch } = useBranch();
   const toast = useToast();
-  const awaitingDesign = useAwaitingDesign();
+  const [detailItem, setDetailItem] = useState<InventoryItem | null>(null);
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 350);
@@ -104,7 +104,7 @@ export default function InventoryProductsPage({
   function handleRowAction(action: RowAction, item: InventoryItem) {
     setActiveItem(item);
     if (action === "view") {
-      awaitingDesign("The product detail page");
+      setDetailItem(item);
       return;
     }
     setDialogKey((key) => key + 1);
@@ -140,8 +140,10 @@ export default function InventoryProductsPage({
     summary.refetch();
   }
 
+  if (detailItem) return <ProductDetails item={items.find(item => item.id === detailItem.id) ?? detailItem} onBack={() => setDetailItem(null)} onSuccess={handleMutationSuccess} />;
+
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="inventory-products flex min-w-0 flex-col gap-6">
       <TopbarAction>
         <PrimaryButton
           onClick={() => setAddProductOpen(true)}
@@ -170,34 +172,30 @@ export default function InventoryProductsPage({
         </div>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {summary.loading || !summary.data ? (
           Array.from({ length: 4 }).map((_, index) => <StatCardSkeleton key={index} />)
         ) : (
           <>
-            <StatCard
-              icon={FolderSearchIcon}
+            <InventoryStatCard
               label="Stock Value"
               value={formatCurrencyCompact(summary.data.stockValue)}
               description="Total stock worth"
               delta={summary.data.stockValueDelta}
             />
-            <StatCard
-              icon={FolderSearchIcon}
+            <InventoryStatCard
               label="Potential Sales Value"
               value={formatCurrencyCompact(summary.data.potentialSalesValue)}
               description="After sales of all products"
               delta={summary.data.potentialSalesValueDelta}
             />
-            <StatCard
-              icon={FolderSearchIcon}
+            <InventoryStatCard
               label="Profit to be made"
               value={formatCurrencyCompact(summary.data.profitToBeMade)}
               description="After sales of all products"
               delta={summary.data.profitToBeMadeDelta}
             />
-            <StatCard
-              icon={FolderSearchIcon}
+            <InventoryStatCard
               label="Stock Requiring Attention"
               value={formatNumber(summary.data.itemsRequiringAttention)}
               description="Low stock, expiring products"
