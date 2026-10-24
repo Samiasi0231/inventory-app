@@ -14,6 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { OrderStatusBadge } from "./order-status-badge";
+import { SalesOrderIcon, type SalesIconName } from "./sales-order-icon";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -30,10 +32,8 @@ import {
   getOrderBalance,
   getOrderPaymentStatus,
   ORDER_PAYMENT_LABELS,
-  ORDER_STATUS_LABELS,
   type OrderAction,
   type OrderPaymentStatus,
-  type OrderStatus,
   type SalesOrder,
 } from "../order-types";
 
@@ -44,14 +44,7 @@ const PAYMENT_VARIANTS: Record<OrderPaymentStatus, "success" | "danger" | "warni
   refunded: "neutral",
 };
 
-const STATUS_VARIANTS: Record<OrderStatus, "success" | "danger" | "warning" | "neutral"> = {
-  completed: "success",
-  fulfilled: "success",
-  confirmed: "success",
-  partially_received: "warning",
-  pending: "neutral",
-  cancelled: "danger",
-};
+const ACTION_ICONS: Record<OrderAction, SalesIconName> = { view: "view", view_invoice: "invoice", create_invoice: "invoice", view_returns: "returns", view_receipt: "receipt", record_payment: "payment", send_goods: "send", cancel: "cancel" };
 
 interface Column {
   id: string;
@@ -93,7 +86,8 @@ export function OrdersTable({
   onAction,
 }: OrdersTableProps) {
   return (
-    <Table className="min-w-[1040px]">
+    <Table className="sales-orders-table min-w-[1096px] table-fixed">
+      <colgroup>{[142,110,124,124,152,118,128,122,76].map((width, i) => <col key={i} style={{ width: `${width/1096*100}%` }} />)}</colgroup>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {COLUMNS.map((column) => {
@@ -116,12 +110,12 @@ export function OrdersTable({
                   <button
                     type="button"
                     onClick={() => onSortChange(column.id)}
-                    className="group/sort inline-flex items-center gap-1 rounded transition-colors hover:text-primary"
+                    className="group/sort relative inline-flex items-center gap-1 rounded transition-colors hover:text-primary"
                   >
                     {column.label}
                     <SortIcon
                       className={cn(
-                        "size-3 transition-opacity",
+                        "absolute -right-4 size-3 transition-opacity",
                         isSorted ? "opacity-100" : "opacity-0 group-hover/sort:opacity-60",
                       )}
                     />
@@ -164,14 +158,12 @@ export function OrdersTable({
                     {balance > 0 ? formatCurrency(balance) : "-"}
                   </TableCell>
                   <TableCell className="w-[128px]">
-                    <Badge variant={PAYMENT_VARIANTS[payment]} dot>
+                    <Badge variant={PAYMENT_VARIANTS[payment]} dot className="bg-transparent! px-0 text-xs font-normal">
                       {ORDER_PAYMENT_LABELS[payment]}
                     </Badge>
                   </TableCell>
                   <TableCell className="w-[150px]">
-                    <Badge variant={STATUS_VARIANTS[order.status]} dot>
-                      {ORDER_STATUS_LABELS[order.status]}
-                    </Badge>
+                    <OrderStatusBadge status={order.status} />
                   </TableCell>
                   <TableCell className="w-[78px] text-center">
                     <div className="flex justify-center">
@@ -182,14 +174,14 @@ export function OrdersTable({
                         >
                           <MoreHorizontalIcon className="size-5" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent className="sales-order-menu">
                           {actions.map((entry) => (
                             <DropdownMenuItem
                               key={entry.id}
-                              variant={entry.id === "cancel" ? "destructive" : "default"}
+                              className="sales-order-menu-item"
                               onClick={() => onAction(entry.id, order)}
                             >
-                              {entry.label}
+                              <SalesOrderIcon name={ACTION_ICONS[entry.id]} />{entry.label}
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuContent>

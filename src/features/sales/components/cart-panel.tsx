@@ -1,6 +1,7 @@
 "use client";
 
-import { MinusIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
+import { useState } from "react";
+import { CheckIcon, MinusIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { TextInput } from "@/components/form/app-fields";
 import {
@@ -10,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatNaira } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
   calculateCartTotals,
@@ -60,22 +61,29 @@ export function CartPanel({
   onRemovePayment,
   onConfirm,
 }: CartPanelProps) {
+  const [paymentFocused, setPaymentFocused] = useState(false);
   const { subtotal, discount, vat, total } = calculateCartTotals(
     lines,
     discountMode,
     discountValue,
+    0,
   );
   const paid = payments.reduce((sum, payment) => sum + payment.amount, 0);
   const outstanding = Math.max(0, total - paid);
+  const fullyPaid = total > 0 && outstanding < 0.01;
+  const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const paymentMethodLabel =
+    paymentMethod === "card" ? "POS" : paymentMethod === "transfer" ? "Bank Transfer" : "Cash";
 
   return (
-    <aside className="flex h-fit min-w-0 flex-col gap-4 rounded-xl bg-surface p-5 xl:sticky xl:top-6">
+    <aside className="new-sale-cart flex h-fit min-w-0 flex-col gap-4 rounded-xl bg-surface p-5 xl:sticky xl:top-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-ink-1">Cart</h2>
+        <h2 className="text-base font-semibold text-ink-1">
+          Cart{lines.length > 0 && <span className="ml-1 text-xs font-normal text-ink-3">· {itemCount} items</span>}
+        </h2>
         <button
           type="button"
           onClick={onClear}
-          disabled={lines.length === 0}
           aria-label="Clear cart"
           className="rounded-full p-1 text-ink-3 transition-colors hover:bg-surface-muted hover:text-ink-1 disabled:pointer-events-none disabled:opacity-40"
         >
@@ -84,53 +92,41 @@ export function CartPanel({
       </div>
 
       {lines.length === 0 ? (
-        <p className="py-8 text-center text-sm text-ink-3">Tap a product to add it to the sale.</p>
+        <p className="py-5 text-center text-sm text-ink-3">Tap a product to add it to the sale.</p>
       ) : (
         <ul className="flex max-h-[280px] flex-col gap-3 overflow-y-auto">
           {lines.map((line) => (
             <li key={line.productId} className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-ink-1">{line.name}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="truncate text-sm font-semibold text-ink-1">{line.name}</p>
+                  <p className="shrink-0 text-sm font-semibold text-ink-1">{formatNaira(line.unitPrice * line.quantity)}</p>
+                </div>
                 <p className="text-xs text-ink-4">
-                  {formatCurrency(line.unitPrice)} / {line.unit}
+                  {formatCurrency(line.unitPrice)} / Item
                 </p>
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button type="button" aria-label={`Decrease ${line.name}`} onClick={() => onQuantityChange(line.productId, line.quantity - 1)} className="new-sale-quantity-button">
+                      <MinusIcon className="size-3" />
+                    </button>
+                    <span className="min-w-3 text-center text-sm font-medium text-ink-1">{line.quantity}</span>
+                    <button type="button" aria-label={`Increase ${line.name}`} onClick={() => onQuantityChange(line.productId, line.quantity + 1)} className="new-sale-quantity-button">
+                      <PlusIcon className="size-3" />
+                    </button>
+                  </div>
+                  <button type="button" aria-label={`Remove ${line.name}`} onClick={() => onRemoveLine(line.productId)} className="shrink-0 rounded p-1 text-ink-4 transition-colors hover:bg-danger-bg hover:text-danger-fg">
+                    <Trash2Icon className="size-4" />
+                  </button>
+                </div>
               </div>
-
-              <div className="flex shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  aria-label={`Decrease ${line.name}`}
-                  onClick={() => onQuantityChange(line.productId, line.quantity - 1)}
-                  className="flex size-6 items-center justify-center rounded border border-border text-ink-2 transition-colors hover:bg-surface-muted"
-                >
-                  <MinusIcon className="size-3" />
-                </button>
-                <span className="w-7 text-center text-sm text-ink-1">{line.quantity}</span>
-                <button
-                  type="button"
-                  aria-label={`Increase ${line.name}`}
-                  onClick={() => onQuantityChange(line.productId, line.quantity + 1)}
-                  className="flex size-6 items-center justify-center rounded border border-border text-ink-2 transition-colors hover:bg-surface-muted"
-                >
-                  <PlusIcon className="size-3" />
-                </button>
-              </div>
-
-              <button
-                type="button"
-                aria-label={`Remove ${line.name}`}
-                onClick={() => onRemoveLine(line.productId)}
-                className="shrink-0 rounded p-1 text-ink-4 transition-colors hover:bg-danger-bg hover:text-danger-fg"
-              >
-                <Trash2Icon className="size-4" />
-              </button>
             </li>
           ))}
         </ul>
       )}
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="discount" className="text-sm text-ink-2">
+        <label htmlFor="discount" className="text-sm font-semibold text-ink-2">
           Discount
         </label>
         <div className="flex items-center gap-2">
@@ -177,9 +173,9 @@ export function CartPanel({
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-sm text-ink-2">Payment</p>
+        <p className="text-sm font-semibold text-ink-2">Payment</p>
 
-        {payments.length > 0 && (
+        {payments.length > 0 && !fullyPaid && (
           <ul className="flex flex-col gap-1">
             {payments.map((payment, index) => (
               <li
@@ -206,11 +202,17 @@ export function CartPanel({
         <div className="flex items-center gap-2">
           <TextInput
             aria-label="Payment amount"
-            type="number"
-            min={0}
+            type="text"
+            inputMode="decimal"
             placeholder="Amount"
-            value={paymentAmount}
-            onChange={(event) => onPaymentAmountChange(event.target.value)}
+            value={
+              paymentFocused || !paymentAmount
+                ? paymentAmount
+                : formatCurrency(Number(paymentAmount) || 0)
+            }
+            onFocus={() => setPaymentFocused(true)}
+            onBlur={() => setPaymentFocused(false)}
+            onChange={(event) => onPaymentAmountChange(event.target.value.replace(/[^\d.]/g, ""))}
             className="h-10"
           />
           <Select
@@ -218,12 +220,12 @@ export function CartPanel({
             onValueChange={(value) => onPaymentMethodChange(value as SalePayment["method"])}
           >
             <SelectTrigger aria-label="Payment method" className="h-10 w-28 shrink-0">
-              <SelectValue />
+              <SelectValue>{paymentMethodLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent align="start">
               <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="card">Card</SelectItem>
-              <SelectItem value="transfer">Transfer</SelectItem>
+              <SelectItem value="card">POS</SelectItem>
+              <SelectItem value="transfer">Bank Transfer</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -237,6 +239,13 @@ export function CartPanel({
           </SecondaryButton>
         </div>
 
+        {fullyPaid && (
+          <div className="new-sale-paid" role="status">
+            <CheckIcon className="size-4" />
+            <span>Fully paid.</span>
+          </div>
+        )}
+
         {outstanding > 0 && payments.length > 0 && (
           <p className="text-xs text-ink-3">
             Outstanding after payments: {formatCurrency(outstanding)} — this will be invoiced on
@@ -248,7 +257,6 @@ export function CartPanel({
       <PrimaryButton
         fullWidth
         className="h-12"
-        disabled={lines.length === 0}
         loading={submitting}
         onClick={onConfirm}
       >
