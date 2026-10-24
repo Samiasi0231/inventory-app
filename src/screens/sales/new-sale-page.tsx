@@ -193,7 +193,7 @@ export default function NewSalePage() {
   }
 
   return (
-    <div className="new-sale-page flex min-w-0 flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6 2xl:ml-2">
       <TopbarAction>
         <PrimaryButton
           onClick={() => document.getElementById("sale-search")?.focus()}
@@ -207,15 +207,15 @@ export default function NewSalePage() {
 
       <header className="px-0.5">
         <h1 className="text-xl font-semibold text-ink-1">New sale</h1>
-        <p className="mt-1 text-base text-ink-1">
+        <p className="mt-0.5 text-base text-ink-1">
           Pick items, take payment, and confirm. The invoice and receipt are created together.
         </p>
       </header>
 
-      <div className="new-sale-layout grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
-        <section className="new-sale-catalog flex min-w-0 flex-col gap-3 rounded-xl bg-surface p-5">
-          <div className="new-sale-customer flex min-w-0 flex-col gap-1">
-              <label htmlFor="customer" className="text-sm text-ink-2">
+      <div className="-mt-[3px] grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_430px] 2xl:w-[1233px] 2xl:grid-cols-[763px_430px] 2xl:gap-10">
+        <section className="flex min-w-0 flex-col gap-3 overflow-visible rounded-xl bg-surface px-5 pt-[18px] pb-5">
+          <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="customer" className="text-sm font-semibold text-ink-2">
                 Customer
               </label>
               <div className="overflow-hidden rounded-lg border border-border bg-white">
@@ -284,7 +284,7 @@ export default function NewSalePage() {
           </div>
 
           {loading ? (
-            <div className="new-sale-product-grid grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {Array.from({ length: 9 }).map((_, index) => (
                 <Skeleton key={index} className="h-[132px] rounded-xl" />
               ))}

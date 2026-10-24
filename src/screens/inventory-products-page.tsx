@@ -143,7 +143,7 @@ export default function InventoryProductsPage({
   if (detailItem) return <ProductDetails item={items.find(item => item.id === detailItem.id) ?? detailItem} onBack={() => setDetailItem(null)} onSuccess={handleMutationSuccess} />;
 
   return (
-    <div className="inventory-products flex min-w-0 flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       <TopbarAction>
         <PrimaryButton
           onClick={() => setAddProductOpen(true)}
@@ -205,7 +205,7 @@ export default function InventoryProductsPage({
         )}
       </section>
 
-      <section className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
+      <section className="flex min-w-0 flex-col gap-5 rounded-xl bg-surface px-5 pt-6 pb-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex h-[42px] w-full items-center gap-2 rounded-lg border border-border px-4 py-2 sm:max-w-[633px]">
             <SearchIcon className="size-5 shrink-0 text-ink-4" />

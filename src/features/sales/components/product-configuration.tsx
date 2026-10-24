@@ -36,8 +36,8 @@ export function ProductConfiguration({ product, onAdd }: ProductConfigurationPro
   if (!options) return null;
 
   return (
-    <section className="new-sale-configurator" aria-label={`Configure ${product.name}`}>
-      <div className="new-sale-config-grid">
+    <section className="mt-3 rounded-[10px] border border-[#d8d8d8] bg-white p-4 shadow-[0_1px_3px_rgba(47,47,47,0.12)]" aria-label={`Configure ${product.name}`}>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <ConfigurationSelect label="Size" value={size} onChange={setSize} values={options.sizes ?? []} />
         <ConfigurationSelect label="Type" value={type} onChange={setType} values={options.types ?? []} />
         <ConfigurationSelect label="Unit" value={unit} onChange={setUnit} values={(options.units ?? []).map((entry) => entry.name)} />
@@ -45,7 +45,7 @@ export function ProductConfiguration({ product, onAdd }: ProductConfigurationPro
 
       <p className="mt-2 text-xs text-ink-4">No data for this variant</p>
 
-      <div className="mt-3 flex items-center justify-between gap-4">
+      <div className="mt-3 flex flex-col items-stretch justify-between gap-4 md:flex-row md:items-center">
         <div className="flex items-center gap-3">
           <input
             aria-label="Quantity"
@@ -66,7 +66,7 @@ export function ProductConfiguration({ product, onAdd }: ProductConfigurationPro
         </PrimaryButton>
       </div>
 
-      <div className="new-sale-stock-note">
+      <div className="mt-3 flex gap-2.5 rounded-lg border border-[#1597ee] bg-[#f2f8ff] px-4 py-3 text-sm leading-5 text-[#1689d6]">
         <CheckIcon className="mt-0.5 size-4 shrink-0" />
         <span>Smart stock depletion: selling sachets auto-converts from Rolls/Cartons when there&apos;s a low - no manual recalculation</span>
       </div>
@@ -89,7 +89,7 @@ function ConfigurationSelect({
     <label className="flex min-w-0 flex-col gap-2 text-sm text-ink-3">
       {label}
       <Select value={value} onValueChange={(next) => onChange(next ?? "")}>
-        <SelectTrigger className="h-[50px] w-full text-base">
+        <SelectTrigger className="h-[50px] w-full text-base shadow-none">
           <SelectValue />
         </SelectTrigger>
         <SelectContent align="start">

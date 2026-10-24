@@ -56,30 +56,36 @@ export function OrderDecisionDialog({ order, kind, onClose, onSuccess }: {
 
   return (
     <FormDialog
+      overlayClassName="bg-[rgb(47_47_47/30%)] supports-backdrop-filter:backdrop-blur-none"
       open
       onOpenChange={open => { if (!open && !busy) onClose(); }}
       title={title}
       description={proposing ? "Propose changes to order price" : "Reject a sales order and state your reason"}
-      className={`order-decision-dialog ${proposing ? "order-propose-dialog" : "order-reject-dialog"}`}
+      className={`w-[950px] max-h-[calc(100dvh-16px)] [&>[data-slot=dialog-close]]:top-6 [&>[data-slot=dialog-close]]:right-6 ${proposing ? "h-[701px]" : "h-[576px]"}`}
+      headerClassName="gap-2 border-0 pt-6 pr-12 pb-0 pl-4 sm:pt-8 sm:pr-14 sm:pl-8"
+      titleClassName="text-2xl leading-8 font-semibold"
+      descriptionClassName="text-base leading-6 text-ink-2 sm:text-lg"
+      bodyClassName="px-4 py-6 sm:p-8"
+      footerClassName="border-0 p-4 sm:px-8 sm:pt-[18px] sm:pb-6"
       footer={
         <>
-          <SecondaryButton disabled={busy} onClick={onClose}>Cancel</SecondaryButton>
-          <PrimaryButton type="submit" form="order-decision-form" disabled={busy}>
+          <SecondaryButton className="h-12 rounded-lg px-6 text-[16px]" disabled={busy} onClick={onClose}>Cancel</SecondaryButton>
+          <PrimaryButton className="h-12 rounded-lg px-6 text-[16px]" type="submit" form="order-decision-form" disabled={busy}>
             {busy ? "Saving…" : proposing ? "Send" : "Reject Order"}
           </PrimaryButton>
         </>
       }
     >
       <form id="order-decision-form" onSubmit={submit}>
-        <div className="decision-order">
+        <div className={`h-14 ${proposing ? "mb-8" : ""}`}>
           <div className="flex items-start justify-between gap-4">
-            <h3 className="text-xl font-semibold leading-6">#{order.orderId}</h3>
-            <OrderStatusBadge status={order.status} detail />
+            <h3 className="text-base leading-6 font-semibold sm:text-xl">#{order.orderId}</h3>
+            <div className="mr-4 [&>span]:py-[3px]"><OrderStatusBadge status={order.status} detail /></div>
           </div>
           <p className="mt-2 text-sm leading-5 text-ink-3">Date Received: {receivedDate(order.orderDate)}</p>
         </div>
 
-        <dl className="decision-totals">
+        <dl className="flex flex-col gap-3 rounded-lg bg-success-bg p-3">
           {[
             ["Order Total", order.total],
             ["Already Paid", order.amountPaid],
@@ -93,9 +99,10 @@ export function OrderDecisionDialog({ order, kind, onClose, onSuccess }: {
         </dl>
 
         {proposing && (
-          <Field label="New Price" htmlFor="decision-price" error={error || undefined} className="decision-price">
+          <Field label="New Price" htmlFor="decision-price" error={error || undefined} className="mt-6 gap-3">
             <TextInput
               id="decision-price"
+              className="h-[50px] text-[16px] shadow-none"
               inputMode="decimal"
               autoComplete="off"
               placeholder="₦0"
@@ -112,12 +119,13 @@ export function OrderDecisionDialog({ order, kind, onClose, onSuccess }: {
           </Field>
         )}
 
-        <div className="decision-note">
+        <div className={proposing ? "mt-4" : "mt-6"}>
           <label htmlFor="decision-note" className="text-sm leading-5 text-ink-1">
             Note <span className="text-xs text-ink-3">(optional)</span>
           </label>
           <TextareaInput
             id="decision-note"
+            className="mt-3 h-[70px] min-h-[70px] resize-none px-4 py-5 text-[16px] leading-relaxed shadow-none"
             placeholder="Note"
             maxLength={500}
             value={note}

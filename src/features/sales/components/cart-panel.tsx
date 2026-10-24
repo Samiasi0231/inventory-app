@@ -76,27 +76,27 @@ export function CartPanel({
     paymentMethod === "card" ? "POS" : paymentMethod === "transfer" ? "Bank Transfer" : "Cash";
 
   return (
-    <aside className="new-sale-cart flex h-fit min-w-0 flex-col gap-4 rounded-xl bg-surface p-5 xl:sticky xl:top-6">
+    <aside className="flex h-fit min-w-0 flex-col gap-4 rounded-xl bg-surface p-5 xl:min-h-[546px] xl:sticky xl:top-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-ink-1">
+        <h2 className="text-lg leading-6 font-semibold text-ink-1">
           Cart{lines.length > 0 && <span className="ml-1 text-xs font-normal text-ink-3">· {itemCount} items</span>}
         </h2>
         <button
           type="button"
           onClick={onClear}
           aria-label="Clear cart"
-          className="rounded-full p-1 text-ink-3 transition-colors hover:bg-surface-muted hover:text-ink-1 disabled:pointer-events-none disabled:opacity-40"
+          className="rounded-full p-0 text-ink-3 transition-colors hover:bg-surface-muted hover:text-ink-1 disabled:pointer-events-none disabled:opacity-40"
         >
-          <XIcon className="size-5" />
+          <XIcon className="size-[26px] stroke-[1.75]" />
         </button>
       </div>
 
       {lines.length === 0 ? (
         <p className="py-5 text-center text-sm text-ink-3">Tap a product to add it to the sale.</p>
       ) : (
-        <ul className="flex max-h-[280px] flex-col gap-3 overflow-y-auto">
+        <ul className="flex max-h-[300px] flex-col gap-3 overflow-y-auto">
           {lines.map((line) => (
-            <li key={line.productId} className="flex items-start gap-2">
+            <li key={line.productId} className="block">
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-3">
                   <p className="truncate text-sm font-semibold text-ink-1">{line.name}</p>
@@ -107,11 +107,11 @@ export function CartPanel({
                 </p>
                 <div className="mt-2 flex items-center justify-between">
                   <div className="flex shrink-0 items-center gap-2">
-                    <button type="button" aria-label={`Decrease ${line.name}`} onClick={() => onQuantityChange(line.productId, line.quantity - 1)} className="new-sale-quantity-button">
+                    <button type="button" aria-label={`Decrease ${line.name}`} onClick={() => onQuantityChange(line.productId, line.quantity - 1)} className="flex size-[18px] items-center justify-center rounded bg-primary text-white">
                       <MinusIcon className="size-3" />
                     </button>
                     <span className="min-w-3 text-center text-sm font-medium text-ink-1">{line.quantity}</span>
-                    <button type="button" aria-label={`Increase ${line.name}`} onClick={() => onQuantityChange(line.productId, line.quantity + 1)} className="new-sale-quantity-button">
+                    <button type="button" aria-label={`Increase ${line.name}`} onClick={() => onQuantityChange(line.productId, line.quantity + 1)} className="flex size-[18px] items-center justify-center rounded bg-primary text-white">
                       <PlusIcon className="size-3" />
                     </button>
                   </div>
@@ -240,7 +240,7 @@ export function CartPanel({
         </div>
 
         {fullyPaid && (
-          <div className="new-sale-paid" role="status">
+          <div className="flex min-h-[42px] items-center gap-3 rounded-lg border border-[#1597ee] bg-[#d9edff] px-4 py-2.5 text-sm text-[#1689d6]" role="status">
             <CheckIcon className="size-4" />
             <span>Fully paid.</span>
           </div>
