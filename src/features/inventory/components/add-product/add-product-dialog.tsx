@@ -143,11 +143,18 @@ export function AddProductDialog({ open, onOpenChange, onSuccess, initialValues,
       open={open}
       onOpenChange={handleOpenChange}
       title={itemId ? "Edit Product" : "Add Product"}
-      className="product-wizard"
+      overlayClassName="bg-[rgb(47_47_47/30%)] supports-backdrop-filter:backdrop-blur-none"
+      className="[&>[data-slot=dialog-close]]:top-6 [&>[data-slot=dialog-close]]:right-6"
+      headerClassName="gap-2 border-b-0 pt-6 pr-12 pb-0 pl-4 sm:pt-8 sm:pr-14 sm:pl-8"
+      titleClassName="text-2xl"
+      descriptionClassName="text-sm text-ink-2 sm:text-lg"
+      bodyClassName="px-4 py-6 sm:p-8"
+      footerClassName="border-t-0 p-4 sm:px-8 sm:py-[18px]"
       description="Manage your products and track stock across your branches."
       footer={
         <>
           <SecondaryButton
+            className="min-h-12 px-6 text-base"
             onClick={goBack}
             disabled={formState.isSubmitting}
             leftIcon={stepIndex > 0 ? <ArrowLeftIcon className="size-4" /> : undefined}
@@ -156,11 +163,11 @@ export function AddProductDialog({ open, onOpenChange, onSuccess, initialValues,
           </SecondaryButton>
 
           {isLastStep ? (
-            <PrimaryButton onClick={onSubmit} loading={formState.isSubmitting}>
+            <PrimaryButton className="min-h-12 px-6 text-base" onClick={onSubmit} loading={formState.isSubmitting}>
               {itemId ? "Save Product" : "Create Product"}
             </PrimaryButton>
           ) : (
-            <PrimaryButton onClick={goNext} rightIcon={<ArrowRightIcon className="size-4" />}>
+            <PrimaryButton className="min-h-12 px-6 text-base" onClick={goNext} rightIcon={<ArrowRightIcon className="size-4" />}>
               Next
             </PrimaryButton>
           )}
@@ -173,10 +180,10 @@ export function AddProductDialog({ open, onOpenChange, onSuccess, initialValues,
             steps={WIZARD_STEPS}
             currentIndex={stepIndex}
             onStepSelect={setStepIndex}
-            className="overflow-x-auto pb-1"
+            className="mb-2 min-w-[640px] overflow-x-auto pb-1 sm:min-w-0 [&_button>span:first-child]:size-[30px]"
           />
 
-          <form onSubmit={(event) => event.preventDefault()}>
+          <form className="[&_input:not([type=file])]:min-h-[50px] [&_input:not([type=file])]:text-base [&_input:not([type=file])]:shadow-none [&_select]:min-h-[50px] [&_select]:text-base [&_select]:shadow-none [&_label]:text-ink-1 [&_textarea]:text-base [&_textarea]:shadow-none [&_section>div]:gap-7" onSubmit={(event) => event.preventDefault()}>
             {stepIndex === 0 && <StepBasicInfo />}
             {stepIndex === 1 && <StepPricingUnits />}
             {stepIndex === 2 && <StepVariants />}

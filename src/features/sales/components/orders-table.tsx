@@ -86,7 +86,7 @@ export function OrdersTable({
   onAction,
 }: OrdersTableProps) {
   return (
-    <Table className="sales-orders-table min-w-[1096px] table-fixed">
+    <Table className="min-w-[1096px] table-fixed [&_tbody_tr:last-child_td]:border-b [&_tbody_tr:last-child_td]:border-[#dedede]">
       <colgroup>{[142,110,124,124,152,118,128,122,76].map((width, i) => <col key={i} style={{ width: `${width/1096*100}%` }} />)}</colgroup>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
@@ -101,7 +101,7 @@ export function OrdersTable({
             return (
               <TableHead
                 key={column.id}
-                className={cn(column.width, column.align === "center" && "text-center")}
+                className={cn("h-10 py-2.5 font-medium", column.width, column.align === "center" && "text-center")}
                 aria-sort={
                   isSorted ? (sortDirection === "desc" ? "descending" : "ascending") : undefined
                 }
@@ -134,7 +134,7 @@ export function OrdersTable({
           ? Array.from({ length: pageSize }).map((_, index) => (
               <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
                 {COLUMNS.map((column) => (
-                  <TableCell key={column.id} className={column.width}>
+                  <TableCell key={column.id} className={cn("h-12 border-b-0 py-2 font-normal", column.width)}>
                     <Skeleton className="h-4 w-full max-w-[120px]" />
                   </TableCell>
                 ))}
@@ -147,25 +147,25 @@ export function OrdersTable({
 
               return (
                 <TableRow key={order.id}>
-                  <TableCell className="w-[125px] font-medium whitespace-nowrap">{order.orderId}</TableCell>
-                  <TableCell className="max-w-0 truncate" title={order.customerName}>
+                  <TableCell className="h-12 border-b-0 py-2 font-normal w-[125px] whitespace-nowrap">{order.orderId}</TableCell>
+                  <TableCell className="h-12 border-b-0 py-2 font-normal max-w-0 truncate" title={order.customerName}>
                     {order.customerName}
                   </TableCell>
-                  <TableCell className="w-[112px] whitespace-nowrap">{formatDate(order.orderDate)}</TableCell>
-                  <TableCell className="w-[112px] whitespace-nowrap">{formatDate(order.dueDate)}</TableCell>
-                  <TableCell className="w-[128px] whitespace-nowrap">{formatCurrency(order.total)}</TableCell>
-                  <TableCell className="w-[118px] whitespace-nowrap">
+                  <TableCell className="h-12 border-b-0 py-2 font-normal w-[112px] whitespace-nowrap">{formatDate(order.orderDate)}</TableCell>
+                  <TableCell className="h-12 border-b-0 py-2 font-normal w-[112px] whitespace-nowrap">{formatDate(order.dueDate)}</TableCell>
+                  <TableCell className="h-12 border-b-0 py-2 font-normal w-[128px] whitespace-nowrap">{formatCurrency(order.total)}</TableCell>
+                  <TableCell className="h-12 border-b-0 py-2 font-normal w-[118px] whitespace-nowrap">
                     {balance > 0 ? formatCurrency(balance) : "-"}
                   </TableCell>
-                  <TableCell className="w-[128px]">
+                  <TableCell className="h-12 border-b-0 py-2 font-normal w-[128px]">
                     <Badge variant={PAYMENT_VARIANTS[payment]} dot className="bg-transparent! px-0 text-xs font-normal">
                       {ORDER_PAYMENT_LABELS[payment]}
                     </Badge>
                   </TableCell>
-                  <TableCell className="w-[150px]">
+                  <TableCell className="h-12 border-b-0 py-2 font-normal w-[150px]">
                     <OrderStatusBadge status={order.status} />
                   </TableCell>
-                  <TableCell className="w-[78px] text-center">
+                  <TableCell className="h-12 border-b-0 py-2 font-normal w-[78px] text-center">
                     <div className="flex justify-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger
@@ -174,11 +174,11 @@ export function OrdersTable({
                         >
                           <MoreHorizontalIcon className="size-5" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="sales-order-menu">
+                        <DropdownMenuContent className="w-72 overflow-hidden rounded-[14px] border-[#dedede] p-0 shadow-[0_1px_2px_rgb(47_47_47/20%)]">
                           {actions.map((entry) => (
                             <DropdownMenuItem
                               key={entry.id}
-                              className="sales-order-menu-item"
+                              className="min-h-11 rounded-none px-4 py-3 font-normal first:bg-surface-muted data-highlighted:bg-accent"
                               onClick={() => onAction(entry.id, order)}
                             >
                               <SalesOrderIcon name={ACTION_ICONS[entry.id]} />{entry.label}

@@ -8,7 +8,6 @@ interface StepSectionProps {
   className?: string;
 }
 
-/** The bordered card each wizard step sits inside. */
 export function StepSection({ title, description, children, className }: StepSectionProps) {
   return (
     <section className={cn("rounded-xl border border-border/70 p-6", className)}>
@@ -21,7 +20,6 @@ export function StepSection({ title, description, children, className }: StepSec
   );
 }
 
-/** Smaller heading used for groups inside a step, e.g. "Quantity Discounts". */
 export function StepSubsection({
   title,
   description,
@@ -31,7 +29,7 @@ export function StepSubsection({
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       <div>
-        <h4 className="text-sm font-semibold text-ink-1">{title}</h4>
+        <h4 className="text-base font-medium text-ink-1">{title}</h4>
         {description && <p className="mt-2 text-xs text-ink-3">{description}</p>}
       </div>
       {children}
