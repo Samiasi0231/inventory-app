@@ -6,6 +6,7 @@ import {
   DownloadIcon,
   PencilIcon,
   PlusIcon,
+  PrinterIcon,
   TriangleAlertIcon,
 } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
@@ -23,13 +24,19 @@ import {
 import { useAwaitingDesign } from "@/hooks/use-awaiting-design";
 import { useBranch } from "@/context/branch-context";
 import { TopbarAction, TopbarBreadcrumb } from "@/layout/app-topbar";
-import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
+import {
+  formatCurrency,
+  formatDate,
+  formatNaira,
+  formatNumber,
+} from "@/lib/format";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { cn } from "@/lib/utils";
 import { ReceiveProductsDialog } from "@/features/purchasing/components/receive-products-dialog";
 import { RecordPaymentDialog } from "@/features/purchasing/components/record-payment-dialog";
 import { RecordSupplierInvoiceDialog } from "@/features/purchasing/components/record-supplier-invoice-dialog";
 import { ReturnProductsDialog } from "@/features/purchasing/components/return-products-dialog";
+import { exportPurchases } from "@/features/purchasing/export-purchases";
 import { purchasingService } from "@/features/purchasing/purchasing.service";
 import {
   getPurchaseBalance,
@@ -40,12 +47,12 @@ import {
 } from "@/features/purchasing/types";
 
 const TABS = [
-  { id: "overview", label: "Order Items" },
+  { id: "overview", label: "Overview" },
   { id: "received", label: "Received Goods" },
-  { id: "invoice", label: "Supplier Invoice" },
   { id: "payments", label: "Payments" },
   { id: "returns", label: "Returns" },
-  { id: "activity", label: "Activity" },
+  { id: "invoice", label: "Supplier Invoice" },
+  { id: "activity", label: "Stock Activity" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -80,9 +87,13 @@ export default function PurchaseOrderDetailPage({
   const awaitingDesign = useAwaitingDesign();
 
   const [tab, setTab] = useState<TabId>(
-    TABS.some((entry) => entry.id === initialTab) ? (initialTab as TabId) : "overview",
+    TABS.some((entry) => entry.id === initialTab)
+      ? (initialTab as TabId)
+      : "overview",
   );
-  const [dialog, setDialog] = useState<"receive" | "payment" | "return" | "invoice" | null>(null);
+  const [dialog, setDialog] = useState<
+    "receive" | "payment" | "return" | "invoice" | null
+  >(null);
   const [dialogKey, setDialogKey] = useState(0);
 
   const {
@@ -136,15 +147,30 @@ export default function PurchaseOrderDetailPage({
 
   const payment = getPurchasePaymentStatus(order);
   const balance = getPurchaseBalance(order);
-  const branchName = branches.find((branch) => branch.id === order.branchId)?.name ?? "—";
-  const subtotal = order.lines.reduce((sum, line) => sum + line.ordered * line.unitCost, 0);
+  const branchName =
+    branches.find((branch) => branch.id === order.branchId)?.name ?? "—";
+  const subtotal = order.lines.reduce(
+    (sum, line) => sum + line.ordered * line.unitCost,
+    0,
+  );
   const otherCosts = Math.max(0, order.totalAmount - subtotal);
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
-      <TopbarBreadcrumb section="Purchase Orders" page={`Order #${order.purchaseId}`} />
+    <div className="purchase-detail-page flex min-w-0 flex-col gap-6">
+      <TopbarBreadcrumb
+        section="Purchase Orders"
+        page={`Order #${order.purchaseId}`}
+      />
 
       <TopbarAction>
+        <button
+          type="button"
+          aria-label="Print purchase order"
+          onClick={() => window.print()}
+          className="hidden size-[42px] items-center justify-center rounded-full border border-border text-ink-2 sm:flex"
+        >
+          <PrinterIcon size={22} strokeWidth={1.5} />
+        </button>
         <PrimaryButton
           onClick={() => openDialog("receive")}
           leftIcon={<PlusIcon className="size-5" />}
@@ -155,27 +181,32 @@ export default function PurchaseOrderDetailPage({
         </PrimaryButton>
       </TopbarAction>
 
-      <section className="flex flex-col gap-4 rounded-xl bg-surface p-5 sm:flex-row sm:items-start sm:justify-between">
+      <section className="purchase-detail-heading flex flex-col gap-4 rounded-xl bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold text-ink-1">#{order.purchaseId}</h1>
+            <h1 className="text-xl font-semibold text-ink-1">
+              #{order.purchaseId}
+            </h1>
             <Badge variant={STATUS_VARIANTS[order.status]} dot>
               {PURCHASE_STATUS_LABELS[order.status]}
             </Badge>
           </div>
-          <p className="mt-2 text-xs text-ink-3">Date Created: {formatDate(order.date)}</p>
+          <p className="mt-2 text-sm text-ink-3">
+            Date Created: {formatDate(order.date)}
+          </p>
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
           <button
             type="button"
+            onClick={() => exportPurchases([order], order.purchaseId)}
             className="flex h-8 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-bold tracking-[0.14px] text-primary transition-colors hover:bg-surface-muted"
           >
             <DownloadIcon className="size-4" />
             Export
           </button>
           <SecondaryButton
-            className="h-10"
+            className="h-12 px-6 text-base"
             leftIcon={<PencilIcon className="size-4" />}
             onClick={() => awaitingDesign("Editing a purchase order")}
           >
@@ -184,7 +215,10 @@ export default function PurchaseOrderDetailPage({
         </div>
       </section>
 
-      <nav className="flex gap-2 overflow-x-auto rounded-xl bg-surface p-2" aria-label="Order sections">
+      <nav
+        className="flex gap-2 overflow-x-auto rounded-xl bg-surface p-2"
+        aria-label="Order sections"
+      >
         {TABS.map((entry) => (
           <button
             key={entry.id}
@@ -205,32 +239,45 @@ export default function PurchaseOrderDetailPage({
 
       {tab === "overview" && (
         <>
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="purchase-detail-overview grid gap-6 lg:grid-cols-2">
             <section className="rounded-xl bg-surface p-5">
-              <h2 className="text-base font-semibold text-ink-1">Order Information</h2>
+              <h2 className="text-base font-semibold text-ink-1">
+                Order Information
+              </h2>
               <dl className="mt-4 flex flex-col gap-3">
                 <DetailRow label="Supplier" value={order.supplierName} />
-                <DetailRow label="Expected Delivery Date" value={formatDate(order.date)} />
+                <DetailRow
+                  label="Expected Delivery Date"
+                  value={formatDate(order.date)}
+                />
                 <DetailRow label="Branch" value={branchName} />
                 <DetailRow label="Created by" value="Inventory Manager" />
               </dl>
 
-              <h3 className="mt-6 text-sm font-semibold text-ink-1">Delivery and Logistics</h3>
+              <h3 className="purchase-detail-logistics text-sm font-semibold text-ink-1">
+                Delivery and Logistics
+              </h3>
               <dl className="mt-3 flex flex-col gap-3">
                 <DetailRow label="Delivery Method" value="Supplier Delivery" />
-                <DetailRow label="Delivery Cost" value={formatCurrency(0)} />
+                <DetailRow label="Delivery Cost" value={formatNaira(0)} />
               </dl>
             </section>
 
             <section className="rounded-xl bg-surface p-5">
-              <h2 className="text-base font-semibold text-ink-1">Payments &amp; Totals</h2>
+              <h2 className="text-base font-semibold text-ink-1">
+                Payments &amp; Totals
+              </h2>
 
-              <dl className="mt-4 flex flex-col gap-2 rounded-lg bg-surface-muted p-4 text-sm">
-                <TotalRow label="Subtotal" value={formatCurrency(subtotal)} />
-                <TotalRow label="Discounts" value={formatCurrency(0)} />
-                <TotalRow label="Other Costs" value={formatCurrency(otherCosts)} />
+              <dl className="purchase-detail-totals mt-4 flex flex-col gap-2 rounded-lg bg-surface-muted p-4 text-sm">
+                <TotalRow label="Subtotal" value={formatNaira(subtotal)} />
+                <TotalRow label="Discounts" value={formatNaira(0)} />
+                <TotalRow label="Other Costs" value={formatNaira(otherCosts)} />
                 <div className="mt-1 border-t border-border/60 pt-2">
-                  <TotalRow label="Total" value={formatCurrency(order.totalAmount)} strong />
+                  <TotalRow
+                    label="Total"
+                    value={formatNaira(order.totalAmount)}
+                    strong
+                  />
                 </div>
               </dl>
 
@@ -243,59 +290,57 @@ export default function PurchaseOrderDetailPage({
                     </Badge>
                   </dd>
                 </div>
-                <TotalRow label="Amount Paid" value={formatCurrency(order.amountPaid)} />
-                <TotalRow label="Balance Due" value={formatCurrency(balance)} />
+                <TotalRow
+                  label="Amount Paid"
+                  value={formatNaira(order.amountPaid)}
+                />
+                <TotalRow label="Balance Due" value={formatNaira(balance)} />
                 <TotalRow label="Payment Method" value="Cash" />
               </dl>
             </section>
           </div>
 
-          <section className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
-            <h2 className="text-base font-semibold text-ink-1">Order Items</h2>
-            <Table className="min-w-[760px]">
+          <section className="purchase-order-items-section flex min-w-0 flex-col gap-6 rounded-xl bg-surface p-5">
+            <div className="flex items-center justify-between gap-4">
+              <h2>Order Items</h2>
+              <button
+                type="button"
+                className="text-sm font-semibold text-primary"
+                onClick={() => openDialog("receive")}
+              >
+                Receive Product
+              </button>
+            </div>
+            <Table className="purchase-order-items min-w-[760px]">
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Items</TableHead>
-                  <TableHead className="w-[110px]">Unit</TableHead>
-                  <TableHead className="w-[100px]">Ordered</TableHead>
-                  <TableHead className="w-[100px]">Received</TableHead>
-                  <TableHead className="w-[130px]">Unit Cost</TableHead>
-                  <TableHead className="w-[110px]">Discount</TableHead>
-                  <TableHead className="w-[140px]">Total</TableHead>
+                <TableRow>
+                  {[
+                    "Product",
+                    "Variant",
+                    "Unit",
+                    "Quantity",
+                    "Unit Cost (₦)",
+                    "Total (₦)",
+                  ].map((label) => (
+                    <TableHead key={label}>{label}</TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {order.lines.map((line) => (
                   <TableRow key={`${line.productId}-${line.variant}`}>
-                    <TableCell className="max-w-0 truncate">
-                      {line.productName}
-                      <span className="text-ink-4"> · {line.variant}</span>
-                    </TableCell>
-                    <TableCell className="w-[110px]">{line.unit}</TableCell>
-                    <TableCell className="w-[100px]">{formatNumber(line.ordered)}</TableCell>
-                    <TableCell className="w-[100px]">{formatNumber(line.received)}</TableCell>
-                    <TableCell className="w-[130px] whitespace-nowrap">
-                      {formatCurrency(line.unitCost)}
-                    </TableCell>
-                    <TableCell className="w-[110px]">{formatCurrency(0)}</TableCell>
-                    <TableCell className="w-[140px] whitespace-nowrap">
-                      {formatCurrency(line.ordered * line.unitCost)}
+                    <TableCell>{line.productName}</TableCell>
+                    <TableCell>{line.variant}</TableCell>
+                    <TableCell>{line.unit}</TableCell>
+                    <TableCell>{formatNumber(line.ordered)}</TableCell>
+                    <TableCell>{formatNumber(line.unitCost)}</TableCell>
+                    <TableCell>
+                      {formatNumber(line.ordered * line.unitCost)}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </section>
-
-          <section className="rounded-xl bg-surface p-5">
-            <h2 className="text-base font-semibold text-ink-1">Quick Links</h2>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <SecondaryButton onClick={() => setTab("received")}>Receive Goods</SecondaryButton>
-              <SecondaryButton onClick={() => setTab("invoice")}>
-                View Supplier Invoice
-              </SecondaryButton>
-              <SecondaryButton onClick={() => setTab("payments")}>Record Payment</SecondaryButton>
-            </div>
           </section>
         </>
       )}
@@ -304,7 +349,11 @@ export default function PurchaseOrderDetailPage({
         <TabPanel
           title="Received Goods"
           description="Quantities booked in against this order."
-          action={<PrimaryButton onClick={() => openDialog("receive")}>Receive Products</PrimaryButton>}
+          action={
+            <PrimaryButton onClick={() => openDialog("receive")}>
+              Receive Products
+            </PrimaryButton>
+          }
         >
           <Table className="min-w-[620px]">
             <TableHeader>
@@ -319,11 +368,19 @@ export default function PurchaseOrderDetailPage({
             <TableBody>
               {order.lines.map((line) => (
                 <TableRow key={`${line.productId}-${line.variant}`}>
-                  <TableCell className="max-w-0 truncate">{line.productName}</TableCell>
+                  <TableCell className="max-w-0 truncate">
+                    {line.productName}
+                  </TableCell>
                   <TableCell className="w-[140px]">{line.variant}</TableCell>
-                  <TableCell className="w-[110px]">{formatNumber(line.ordered)}</TableCell>
-                  <TableCell className="w-[110px]">{formatNumber(line.received)}</TableCell>
-                  <TableCell className="w-[150px]">{line.batchNumber || "—"}</TableCell>
+                  <TableCell className="w-[110px]">
+                    {formatNumber(line.ordered)}
+                  </TableCell>
+                  <TableCell className="w-[110px]">
+                    {formatNumber(line.received)}
+                  </TableCell>
+                  <TableCell className="w-[150px]">
+                    {line.batchNumber || "—"}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -336,17 +393,26 @@ export default function PurchaseOrderDetailPage({
           title="Payments"
           description={`${formatCurrency(order.amountPaid)} paid of ${formatCurrency(order.totalAmount)}.`}
           action={
-            <PrimaryButton disabled={balance <= 0} onClick={() => openDialog("payment")}>
+            <PrimaryButton
+              disabled={balance <= 0}
+              onClick={() => openDialog("payment")}
+            >
               Record Payment
             </PrimaryButton>
           }
         >
           {order.amountPaid <= 0 ? (
-            <EmptyState title="No payments yet" description="Record a payment to see it here." />
+            <EmptyState
+              title="No payments yet"
+              description="Record a payment to see it here."
+            />
           ) : (
             <dl className="flex flex-col gap-3 text-sm">
-              <TotalRow label="Amount Paid" value={formatCurrency(order.amountPaid)} />
-              <TotalRow label="Balance Due" value={formatCurrency(balance)} />
+              <TotalRow
+                label="Amount Paid"
+                value={formatNaira(order.amountPaid)}
+              />
+              <TotalRow label="Balance Due" value={formatNaira(balance)} />
             </dl>
           )}
         </TabPanel>
@@ -357,7 +423,10 @@ export default function PurchaseOrderDetailPage({
           title="Returns"
           description="Goods sent back to the supplier."
           action={
-            <PrimaryButton disabled={order.fulfilled <= 0} onClick={() => openDialog("return")}>
+            <PrimaryButton
+              disabled={order.fulfilled <= 0}
+              onClick={() => openDialog("return")}
+            >
               Return Products
             </PrimaryButton>
           }
@@ -432,21 +501,30 @@ export default function PurchaseOrderDetailPage({
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <dt className="flex items-center gap-2 text-sm text-ink-2">
-        <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-primary" />
-        {label} :
-      </dt>
+    <div className="purchase-detail-row flex items-start justify-between gap-4">
+      <dt className="flex items-center gap-2 text-sm text-ink-2">{label}</dt>
       <dd className="text-right text-sm font-medium text-ink-1">{value}</dd>
     </div>
   );
 }
 
-function TotalRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function TotalRow({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) {
   return (
     <div className="flex items-center justify-between">
-      <dt className={strong ? "font-semibold text-ink-1" : "text-ink-3"}>{label}</dt>
-      <dd className={strong ? "font-semibold text-ink-1" : "text-ink-1"}>{value}</dd>
+      <dt className={strong ? "font-semibold text-ink-1" : "text-ink-3"}>
+        {label}
+      </dt>
+      <dd className={strong ? "font-semibold text-ink-1" : "text-ink-1"}>
+        {value}
+      </dd>
     </div>
   );
 }
