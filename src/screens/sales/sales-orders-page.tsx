@@ -1,13 +1,14 @@
 "use client";
 
+import { OrderDetailsDialog, type OrderDetailTab } from "@/features/sales/components/order-details-dialog";
+import { OrderFilters, EMPTY_ORDER_FILTERS, type OrderFiltersValue } from "@/features/sales/components/order-filters";
+import { SalesOrderIcon, type SalesIconName } from "@/features/sales/components/sales-order-icon";
+import { exportCsv } from "@/lib/utils";
+
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BanknoteIcon,
-  ChartColumnIcon,
   DownloadIcon,
-  FileTextIcon,
-  HourglassIcon,
   PlusIcon,
   SearchIcon,
   ShoppingCartIcon,
@@ -16,7 +17,7 @@ import {
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
 import { FormDialog } from "@/components/common/form-dialog";
-import { StatCard, StatCardSkeleton } from "@/components/common/stat-card";
+import { StatCardSkeleton } from "@/components/common/stat-card";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { useBranch } from "@/context/branch-context";
@@ -29,21 +30,9 @@ import { useAsyncResource } from "@/hooks/use-async-resource";
 import { OrdersTable } from "@/features/sales/components/orders-table";
 import { ordersService } from "@/features/sales/orders.service";
 import {
-  ORDER_STATUS_LABELS,
   type OrderAction,
-  type OrderStatus,
   type SalesOrder,
 } from "@/features/sales/order-types";
-
-const STATUS_FILTERS: (OrderStatus | "all")[] = [
-  "all",
-  "pending",
-  "confirmed",
-  "partially_received",
-  "fulfilled",
-  "completed",
-  "cancelled",
-];
 
 export default function SalesOrdersPage() {
   const router = useRouter();
@@ -52,7 +41,8 @@ export default function SalesOrdersPage() {
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 350);
-  const [status, setStatus] = useState<OrderStatus | "all">("all");
+  const [filters, setFilters] = useState<OrderFiltersValue>(EMPTY_ORDER_FILTERS);
+  const [detail, setDetail] = useState<{ id: string; tab: OrderDetailTab; payment?: boolean } | null>(null);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<string | undefined>();
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -67,11 +57,11 @@ export default function SalesOrdersPage() {
       pageSize: 15,
       search: debouncedSearch || undefined,
       branchId: activeBranch.id,
-      status,
+      ...filters,
       sortBy,
       sortDirection,
     }),
-    [page, debouncedSearch, activeBranch.id, status, sortBy, sortDirection],
+    [page, debouncedSearch, activeBranch.id, filters, sortBy, sortDirection],
   );
 
   const {
@@ -92,7 +82,7 @@ export default function SalesOrdersPage() {
   const orders = resource?.list.data ?? [];
   const total = resource?.list.total ?? 0;
   const summary = resource?.summary;
-  const hasFilters = Boolean(debouncedSearch) || status !== "all";
+  const hasFilters = Boolean(debouncedSearch) || filters.status !== "all" || filters.payment !== "all";
 
   function handleSortChange(column: string) {
     setPage(1);
@@ -113,27 +103,31 @@ export default function SalesOrdersPage() {
     }
 
     if (action === "view") {
-      router.push(`/sales/orders/${order.id}`);
+      setDetail({ id: order.id, tab: "overview" });
       return;
     }
 
     if (action === "view_returns") {
-      router.push(`/sales/orders/${order.id}?tab=returns`);
+      setDetail({ id: order.id, tab: "returns" });
       return;
     }
 
     if (action === "record_payment") {
-      router.push(`/sales/orders/${order.id}?tab=payments`);
+      setDetail({ id: order.id, tab: "payments", payment: true });
       return;
     }
 
     if (action === "view_invoice" || action === "create_invoice") {
-      router.push("/sales/invoices");
+      if (action === "create_invoice") {
+        try { await ordersService.createInvoice(order.id); refetch(); }
+        catch { toast.add({ type: "error", title: "Couldn't create invoice" }); return; }
+      }
+      setDetail({ id: order.id, tab: "invoice" });
       return;
     }
 
     if (action === "view_receipt") {
-      router.push("/sales/receipts");
+      setDetail({ id: order.id, tab: "payments" });
       return;
     }
 
@@ -152,7 +146,7 @@ export default function SalesOrdersPage() {
       return;
     }
 
-    router.push(`/sales/orders/${order.id}`);
+    setDetail({ id: order.id, tab: "overview" });
   }
 
   async function confirmCancel() {
@@ -198,6 +192,10 @@ export default function SalesOrdersPage() {
           <BranchSelector />
           <button
             type="button"
+            onClick={async () => {
+              try { const result = await ordersService.listOrders({ ...params, page: 1, pageSize: total || 1 }); exportCsv(result.data.map(order => [order.orderId, order.customerName, order.orderDate, order.dueDate, order.total, order.amountPaid, order.status]), ["Order ID", "Customer", "Order date", "Due date", "Total", "Paid", "Status"].map((header, index) => ({ header, value: (row: (string | number)[]) => row[index] })), "sales-orders.csv"); }
+              catch { toast.add({ type: "error", title: "Couldn't export orders" }); }
+            }}
             className="flex h-8 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-bold tracking-[0.14px] text-primary transition-colors hover:bg-surface-muted"
           >
             <DownloadIcon className="size-4" />
@@ -206,52 +204,25 @@ export default function SalesOrdersPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-[repeat(5,minmax(180px,1fr))] lg:overflow-x-auto">
         {loading || !summary ? (
           Array.from({ length: 5 }).map((_, index) => <StatCardSkeleton key={index} />)
         ) : (
           <>
-            <StatCard
-              icon={ShoppingCartIcon}
-              label="Total Sales"
-              valueClassName="text-xl"
-              value={formatCurrencyCompact(summary.totalSales)}
-              description={`Generated from ${formatNumber(summary.invoiceCount)} invoices`}
-            />
-            <StatCard
-              icon={BanknoteIcon}
-              label="Collected"
-              valueClassName="text-xl"
-              value={formatCurrencyCompact(summary.collected)}
-              description="Payments received"
-            />
-            <StatCard
-              icon={HourglassIcon}
-              label="Outstanding"
-              valueClassName="text-xl"
-              value={formatCurrencyCompact(summary.outstanding)}
-              description="Still to be collected"
-            />
-            <StatCard
-              icon={ChartColumnIcon}
-              label="Gross profit"
-              valueClassName="text-xl"
-              value={formatCurrencyCompact(summary.grossProfit)}
-              description="After cost of goods"
-            />
-            <StatCard
-              icon={FileTextIcon}
-              label="Invoices"
-              value={formatNumber(summary.invoices)}
-              description="Raised from these orders"
-            />
+            {([
+              ["sales", "Total Sales", formatCurrencyCompact(summary.totalSales), `Generated from ${formatNumber(summary.invoiceCount)} Invoices`],
+              ["collected", "Collected", formatCurrencyCompact(summary.collected), ""],
+              ["outstanding", "Outstanding", formatCurrencyCompact(summary.outstanding), ""],
+              ["profit", "Gross profit", formatCurrencyCompact(summary.grossProfit), ""],
+              ["invoices", "Invoices", formatNumber(summary.invoices), ""],
+            ] as [SalesIconName, string, string, string][]).map(([icon, label, value, description]) => <div key={label} className="@container h-[130px] min-w-0 rounded-lg bg-surface p-5"><div className="flex items-center gap-1 text-sm tracking-[0.14px] text-ink-3"><SalesOrderIcon name={icon} className="size-5 shrink-0 text-primary" />{label}</div><p className="mt-4 whitespace-nowrap text-[clamp(17px,14.3cqw,24px)] font-semibold leading-7 tracking-[-0.4px]">{value}</p>{description && <p className="mt-2 text-xs tracking-[0.18px]">{description}</p>}</div>)}
           </>
         )}
       </section>
 
-      <section className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
+      <section className="flex min-w-0 flex-col gap-5 rounded-xl bg-surface px-5 pt-6 pb-0">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex h-[42px] w-full items-center gap-2 rounded-lg border border-border px-4 py-2 lg:max-w-[460px]">
+          <div className="flex h-[42px] w-full items-center gap-2 rounded-lg border border-border px-4 py-2 lg:max-w-[633px]">
             <SearchIcon className="size-5 shrink-0 text-ink-4" />
             <input
               type="search"
@@ -267,24 +238,7 @@ export default function SalesOrdersPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {STATUS_FILTERS.map((entry) => (
-              <button
-                key={entry}
-                type="button"
-                aria-pressed={status === entry}
-                onClick={() => {
-                  setStatus(entry);
-                  setPage(1);
-                }}
-                className={
-                  status === entry
-                    ? "rounded-full border border-primary bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground"
-                    : "rounded-full border border-border px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors hover:bg-surface-muted"
-                }
-              >
-                {entry === "all" ? "All" : ORDER_STATUS_LABELS[entry]}
-              </button>
-            ))}
+            <OrderFilters value={filters} onChange={next => { setFilters(next); setPage(1); }} />
           </div>
         </div>
 
@@ -309,7 +263,7 @@ export default function SalesOrdersPage() {
                 <SecondaryButton
                   onClick={() => {
                     setSearch("");
-                    setStatus("all");
+                    setFilters(EMPTY_ORDER_FILTERS);
                     setPage(1);
                   }}
                 >
@@ -335,7 +289,9 @@ export default function SalesOrdersPage() {
         )}
       </section>
 
+      {detail && <OrderDetailsDialog key={`${detail.id}-${detail.tab}-${detail.payment}`} orderId={detail.id} initialTab={detail.tab} initialAction={detail.payment ? "payment" : undefined} onClose={() => setDetail(null)} onSuccess={refetch} />}
       <FormDialog
+        className="sales-action-dialog"
         open={cancelOpen}
         onOpenChange={setCancelOpen}
         title="Cancel order"

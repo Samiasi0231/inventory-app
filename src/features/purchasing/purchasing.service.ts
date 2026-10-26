@@ -1,3 +1,4 @@
+import { purchaseListFixtures } from "./purchase-order-fixtures";
 import type { ID, ISODateString, Paginated } from "@/types/shared";
 import { MOCK_SUPPLIERS } from "@/features/inventory/mock-data";
 import {
@@ -60,15 +61,16 @@ function buildLines(index: number, mode: ReceiptMode): PurchaseOrderLine[] {
 }
 
 function buildOrder(index: number): PurchaseOrder {
-  const status = STATUS_CYCLE[index % STATUS_CYCLE.length];
+  const fixture = purchaseListFixtures[index];
+  const status = fixture?.status ?? STATUS_CYCLE[index % STATUS_CYCLE.length];
   const supplier = MOCK_SUPPLIERS[index % MOCK_SUPPLIERS.length];
   const lines = buildLines(
     index,
-    status === "pending_approval" || status === "cancelled"
-      ? "none"
-      : status === "partially_received"
-        ? "partial"
-        : "full",
+    status === "partially_received"
+      ? "partial"
+      : status === "received" || status === "completed"
+        ? "full"
+        : "none",
   );
 
   const subtotal = lines.reduce((sum, line) => sum + line.ordered * line.unitCost, 0);
@@ -78,20 +80,24 @@ function buildOrder(index: number): PurchaseOrder {
 
   const fulfilled = lines.reduce((sum, line) => sum + line.received, 0);
 
-  const amountPaid =
-    status === "cancelled"
-      ? 0
-      : status === "pending_approval"
-        ? 0
-        : status === "partially_received"
-          ? Math.round(totalAmount / 2)
-          : totalAmount;
+  let amountPaid = totalAmount;
+  if (
+    fixture?.paymentStatus === "unpaid" ||
+    (!fixture && (status === "cancelled" || status === "pending_approval"))
+  ) {
+    amountPaid = 0;
+  } else if (
+    fixture?.paymentStatus === "partially_paid" ||
+    (!fixture && status === "partially_received")
+  ) {
+    amountPaid = Math.round(totalAmount / 2);
+  }
 
   return {
     id: `po_${index + 1}`,
     purchaseId: `P-${String(index + 1).padStart(3, "0")}`,
     supplierId: supplier.id,
-    supplierName: supplier.name,
+    supplierName: fixture?.supplierName ?? supplier.name,
     items,
     totalAmount,
     amountPaid,

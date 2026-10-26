@@ -88,6 +88,14 @@ export interface SellableProduct {
   /** Null for services, which are not stock-tracked. */
   stock: number | null;
   isService: boolean;
+  /** Optional sellable choices exposed by the POS configuration tray. */
+  options?: {
+    sizes?: string[];
+    types?: string[];
+    units?: { name: string; price: number; stock?: number | null }[];
+    smallestUnit?: string;
+    smallestUnitPrice?: number;
+  };
 }
 
 export interface CartLine {
@@ -122,6 +130,7 @@ export interface CreateSalePayload {
   discountMode: DiscountMode;
   discountValue: number;
   payments: SalePayment[];
+  vatRate?: number;
 }
 
 export interface CreateSaleResult {
@@ -142,6 +151,7 @@ export function calculateCartTotals(
   lines: CartLine[],
   discountMode: DiscountMode,
   discountValue: number,
+  vatRate = VAT_RATE,
 ) {
   const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
 
@@ -150,7 +160,7 @@ export function calculateCartTotals(
   const discount = Math.min(Math.max(0, rawDiscount), subtotal);
 
   const taxable = subtotal - discount;
-  const vat = taxable * VAT_RATE;
+  const vat = taxable * vatRate;
 
   return { subtotal, discount, vat, total: taxable + vat };
 }

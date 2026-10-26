@@ -1,15 +1,25 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FormDialog } from "@/components/common/form-dialog";
+import { PurchaseDialog } from "./purchase-dialog";
+import { PurchaseDateInput } from "./purchase-date-input";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
-import { Field, SelectInput, TextInput, TextareaInput } from "@/components/form/app-fields";
+import {
+  Field,
+  SelectInput,
+  TextInput,
+  TextareaInput,
+} from "@/components/form/app-fields";
 import { useToast } from "@/components/ui/toast";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatNaira } from "@/lib/format";
 import { purchasingService } from "../purchasing.service";
-import { getPurchaseBalance, PURCHASE_PAYMENT_METHODS, type PurchaseOrder } from "../types";
+import {
+  getPurchaseBalance,
+  PURCHASE_PAYMENT_METHODS,
+  type PurchaseOrder,
+} from "../types";
 
 const NOTE_LIMIT = 500;
 
@@ -33,30 +43,37 @@ export function RecordPaymentDialog({
     amount: z.coerce
       .number()
       .positive("Enter an amount")
-      .max(balance, `That is more than the ${formatCurrency(balance)} outstanding`),
+      .max(
+        balance,
+        `That is more than the ${formatCurrency(balance)} outstanding`,
+      ),
     reference: z.string().optional(),
     method: z.string().min(1, "Select a payment method"),
     paymentDate: z.string().min(1, "Pick a payment date"),
-    note: z.string().max(NOTE_LIMIT, `Keep notes under ${NOTE_LIMIT} characters`).optional(),
+    note: z
+      .string()
+      .max(NOTE_LIMIT, `Keep notes under ${NOTE_LIMIT} characters`)
+      .optional(),
   });
 
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<z.input<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      amount: balance,
+      amount: "",
       reference: "",
       method: "",
-      paymentDate: new Date().toISOString().slice(0, 10),
+      paymentDate: "",
       note: "",
     },
   });
 
-  const note = watch("note") ?? "";
+  const note = useWatch({ control, name: "note" }) ?? "";
+  const paymentDate = useWatch({ control, name: "paymentDate" });
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -78,14 +95,18 @@ export function RecordPaymentDialog({
   });
 
   return (
-    <FormDialog
+    <PurchaseDialog
+      className="purchase-payment-dialog"
       open={open}
       onOpenChange={onOpenChange}
       title="Record Payment"
       description={`Record a payment for ${order.purchaseId} from ${order.supplierName}`}
       footer={
         <>
-          <SecondaryButton onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <SecondaryButton
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </SecondaryButton>
           <PrimaryButton onClick={onSubmit} loading={isSubmitting}>
@@ -95,14 +116,24 @@ export function RecordPaymentDialog({
       }
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-5">
-        <dl className="flex flex-col gap-2 rounded-lg bg-accent p-4 text-sm">
-          <SummaryRow label="Order Total" value={formatCurrency(order.totalAmount)} />
-          <SummaryRow label="Already Paid" value={formatCurrency(order.amountPaid)} />
-          <SummaryRow label="Balance Due" value={formatCurrency(balance)} />
+        <dl className="purchase-payment-summary flex flex-col gap-2 rounded-lg bg-accent p-4 text-sm">
+          <SummaryRow
+            label="Order Total"
+            value={formatNaira(order.totalAmount)}
+          />
+          <SummaryRow
+            label="Already Paid"
+            value={formatNaira(order.amountPaid)}
+          />
+          <SummaryRow label="Balance Due" value={formatNaira(balance)} />
         </dl>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Amount Paid" htmlFor="amount" required error={errors.amount?.message}>
+          <Field
+            label="Amount Paid"
+            htmlFor="amount"
+            error={errors.amount?.message}
+          >
             <TextInput
               id="amount"
               type="number"
@@ -115,11 +146,23 @@ export function RecordPaymentDialog({
           </Field>
 
           <Field label="Reference Number" htmlFor="reference">
-            <TextInput id="reference" placeholder="0" {...register("reference")} />
+            <TextInput
+              id="reference"
+              placeholder="0"
+              {...register("reference")}
+            />
           </Field>
 
-          <Field label="Payment Method" htmlFor="method" required error={errors.method?.message}>
-            <SelectInput id="method" invalid={!!errors.method} {...register("method")}>
+          <Field
+            label="Payment Method"
+            htmlFor="method"
+            error={errors.method?.message}
+          >
+            <SelectInput
+              id="method"
+              invalid={!!errors.method}
+              {...register("method")}
+            >
               <option value="">Select Payment Method</option>
               {PURCHASE_PAYMENT_METHODS.map((method) => (
                 <option key={method.value} value={method.value}>
@@ -132,12 +175,11 @@ export function RecordPaymentDialog({
           <Field
             label="Payment Date"
             htmlFor="paymentDate"
-            required
             error={errors.paymentDate?.message}
           >
-            <TextInput
+            <PurchaseDateInput
+              displayValue={paymentDate}
               id="paymentDate"
-              type="date"
               invalid={!!errors.paymentDate}
               {...register("paymentDate")}
             />
@@ -150,10 +192,16 @@ export function RecordPaymentDialog({
           error={errors.note?.message}
           hint={`${note.length}/${NOTE_LIMIT}`}
         >
-          <TextareaInput id="note" placeholder="Note" maxLength={NOTE_LIMIT} {...register("note")} />
+          <TextareaInput
+            id="note"
+            placeholder="Note"
+            className="purchase-payment-note"
+            maxLength={NOTE_LIMIT}
+            {...register("note")}
+          />
         </Field>
       </form>
-    </FormDialog>
+    </PurchaseDialog>
   );
 }
 

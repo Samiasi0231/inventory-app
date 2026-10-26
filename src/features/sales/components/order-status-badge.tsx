@@ -1,39 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  ORDER_PAYMENT_LABELS,
-  ORDER_STATUS_LABELS,
-  type OrderPaymentStatus,
-  type OrderStatus,
-} from "../order-types";
-
-const STATUS_VARIANTS: Record<OrderStatus, "success" | "danger" | "warning" | "neutral"> = {
-  completed: "success",
-  fulfilled: "success",
-  confirmed: "success",
-  partially_received: "warning",
-  pending: "neutral",
-  cancelled: "danger",
-};
-
-const PAYMENT_VARIANTS: Record<OrderPaymentStatus, "success" | "danger" | "warning" | "neutral"> = {
-  paid: "success",
-  unpaid: "danger",
-  partially_paid: "warning",
-  refunded: "neutral",
-};
-
-export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  return (
-    <Badge variant={STATUS_VARIANTS[status]} dot>
-      {ORDER_STATUS_LABELS[status]}
-    </Badge>
-  );
-}
-
-export function OrderPaymentBadge({ status }: { status: OrderPaymentStatus }) {
-  return (
-    <Badge variant={PAYMENT_VARIANTS[status]} dot>
-      {ORDER_PAYMENT_LABELS[status]}
-    </Badge>
-  );
+import { ORDER_STATUS_LABELS, type OrderStatus } from "../order-types";
+export function OrderStatusBadge({ status, detail = false }: { status: OrderStatus; detail?: boolean }) {
+  return <Badge dot variant={status === "confirmed" ? "info" : status === "cancelled" ? "danger" : status === "partially_received" || (detail && status === "pending") ? "warning" : status === "pending" ? "neutral" : "success"} className={detail ? "border border-current/30 px-2 py-1 text-xs" : "px-2 py-1 text-xs"}>{detail && status === "pending" ? "Pending Approval" : ORDER_STATUS_LABELS[status]}</Badge>;
 }

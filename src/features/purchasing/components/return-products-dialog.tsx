@@ -1,11 +1,17 @@
 "use client";
 
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FormDialog } from "@/components/common/form-dialog";
+import { PurchaseDialog } from "./purchase-dialog";
+import { PurchaseDateInput } from "./purchase-date-input";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
-import { Field, SelectInput, TextInput, TextareaInput } from "@/components/form/app-fields";
+import {
+  Field,
+  SelectInput,
+  TextInput,
+  TextareaInput,
+} from "@/components/form/app-fields";
 import { useToast } from "@/components/ui/toast";
 import { purchasingService } from "../purchasing.service";
 import { RETURN_REASONS, type PurchaseOrder } from "../types";
@@ -56,7 +62,7 @@ export function ReturnProductsDialog({
   } = useForm<ReturnValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      date: new Date().toISOString().slice(0, 10),
+      date: "",
       createdBy: CREATED_BY_OPTIONS[0],
       notes: "",
       lines: order.lines.map((line) => ({
@@ -74,6 +80,7 @@ export function ReturnProductsDialog({
   });
 
   const { fields } = useFieldArray({ control, name: "lines" });
+  const date = useWatch({ control, name: "date" });
 
   const onSubmit = handleSubmit(async (values) => {
     const returning = values.lines.filter((line) => Number(line.returnQty) > 0);
@@ -114,14 +121,18 @@ export function ReturnProductsDialog({
   });
 
   return (
-    <FormDialog
+    <PurchaseDialog
+      className="purchase-return-dialog"
       open={open}
       onOpenChange={onOpenChange}
       title="Return Products"
       description="Enter details to return goods"
       footer={
         <>
-          <SecondaryButton onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <SecondaryButton
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </SecondaryButton>
           <PrimaryButton onClick={onSubmit} loading={isSubmitting}>
@@ -132,10 +143,23 @@ export function ReturnProductsDialog({
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-5">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Date" htmlFor="return-date" required error={errors.date?.message}>
-            <TextInput id="return-date" type="date" invalid={!!errors.date} {...register("date")} />
+          <Field
+            label="Date"
+            htmlFor="return-date"
+            error={errors.date?.message}
+          >
+            <PurchaseDateInput
+              id="return-date"
+              displayValue={date}
+              invalid={!!errors.date}
+              {...register("date")}
+            />
           </Field>
-          <Field label="Created by" htmlFor="return-by" error={errors.createdBy?.message}>
+          <Field
+            label="Created by"
+            htmlFor="return-by"
+            error={errors.createdBy?.message}
+          >
             <SelectInput id="return-by" {...register("createdBy")}>
               {CREATED_BY_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -146,7 +170,7 @@ export function ReturnProductsDialog({
           </Field>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="purchase-line-table purchase-return-table overflow-x-auto rounded-lg border border-border">
           <div className="grid min-w-[800px] grid-cols-[1fr_0.9fr_0.6fr_0.7fr_0.6fr_0.8fr_0.9fr_1fr] gap-3 bg-surface-muted px-4 py-3 text-xs font-semibold text-ink-1">
             <span>Product</span>
             <span>Variant</span>
@@ -205,6 +229,6 @@ export function ReturnProductsDialog({
           />
         </Field>
       </form>
-    </FormDialog>
+    </PurchaseDialog>
   );
 }
