@@ -6,13 +6,14 @@ import { LandingNavbar } from "./landing-navbar";
 
 /**
  * Hero — fixed 1073px tall on desktop (1440 frame). The dashboard preview is
- * deliberately cropped by the bottom edge of the section.
+ * cropped by the bottom edge of the section: no bottom border, and the whole
+ * bottom of the hero fades to white so it melts into the next section.
  */
 export function HeroSection() {
     return (
         <section
             id="top"
-            className="relative overflow-hidden bg-gradient-to-b from-brand-500 via-[#10a35a] to-[#38c97f] pb-12 lg:h-[1073px] lg:pb-0"
+            className="relative overflow-hidden bg-gradient-to-b from-brand-500 via-[#10a35a] to-[#38c97f] lg:h-[1073px]"
         >
             {/* Faint grid texture */}
             <div
@@ -45,9 +46,16 @@ export function HeroSection() {
                 </div>
             </Container>
 
-            <div className="relative mx-auto mt-14 w-full max-w-[1100px] px-4 sm:px-6 lg:mt-20">
+            {/* Below lg the section has no fixed height, so crop the preview here instead. */}
+            <div className="relative mx-auto mt-14 max-h-[340px] w-full max-w-[1100px] overflow-hidden px-4 sm:max-h-[480px] sm:px-6 lg:mt-20 lg:max-h-none">
                 <DashboardPreview />
             </div>
+
+            {/* Fade the bottom of the hero (and the preview's cut edge) into the white section below. */}
+            <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-white via-white/80 to-transparent sm:h-40"
+            />
         </section>
     );
 }

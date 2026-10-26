@@ -1,4 +1,6 @@
-import { Check, ChevronDown, ChevronLeft, Lock, TrendingUp, User } from "lucide-react";
+import Image from "next/image";
+import { Check, ChevronDown, ChevronLeft, Lock, MapPin, TrendingUp, User } from "lucide-react";
+import logo from "@/assets/images/riin-logo.svg";
 import { cn } from "@/lib/utils";
 import { FeatureImage } from "./feature-image";
 import {
@@ -9,16 +11,18 @@ import {
   purchaseOrderPreview,
   type IllustrationKind,
 } from "./landing-content";
- 
+
 // -----------------------------------------------------------------------------
-// Sales & Purchasing — purchase-order form with the products table on top of it
+// Sales & Purchasing — purchase-order form with the products table on top of it.
+// Both panels are taller than the frame and have no bottom radius, so the
+// frame's overflow-hidden crops them (the bottom is meant to be hidden).
 // -----------------------------------------------------------------------------
 function PurchaseOrderIllustration() {
   const { formFields, columns, rows } = purchaseOrderPreview;
- 
+
   return (
     <>
-      <div className="absolute left-[8%] top-[30%] w-[57%] rounded-md bg-white p-3 shadow-sm">
+      <div className="absolute left-[8%] top-[30%] h-48 w-[57%] rounded-t-md bg-white p-3 shadow-sm">
         <p className="flex items-center gap-1 text-[10px] font-semibold text-ink-1">
           <ChevronLeft className="size-3" /> Supplier and Logistics
         </p>
@@ -31,8 +35,8 @@ function PurchaseOrderIllustration() {
           ))}
         </dl>
       </div>
- 
-      <div className="absolute left-[36%] top-[54%] w-[56%] rounded-md border border-neutral-100 bg-white p-3 shadow-md">
+
+      <div className="absolute left-[36%] top-[54%] h-40 w-[56%] rounded-t-md border border-b-0 border-neutral-100 bg-white p-3 shadow-md">
         <p className="flex items-center gap-1 text-[10px] font-semibold text-ink-1">
           <ChevronLeft className="size-3" /> Products
         </p>
@@ -62,30 +66,31 @@ function PurchaseOrderIllustration() {
     </>
   );
 }
- 
+
 // -----------------------------------------------------------------------------
-// Smart inventory & batch control — stock table with status pills
+// Smart inventory & batch control — stock table with status pills. Anchored to
+// the top and cropped by the frame at the bottom, like the design.
 // -----------------------------------------------------------------------------
 const statusStyles = {
   low: { label: "Low Stock", pill: "bg-danger-bg text-danger-fg", dot: "bg-danger-fg" },
   "in-stock": { label: "In Stock", pill: "bg-success-bg text-success-fg", dot: "bg-success-fg" },
 } as const;
- 
+
 const inventoryGrid = "grid grid-cols-[0.6fr_1.5fr_1.6fr_0.9fr_1.1fr] items-center gap-2 px-3";
- 
+
 function InventoryIllustration() {
   const { columns, rows } = inventoryPreview;
- 
+
   return (
-    <div className="absolute inset-x-[14%] bottom-[8%] overflow-hidden rounded-sm bg-white shadow-sm">
-      <div className={cn(inventoryGrid, "bg-brand-50/50 py-2 text-[9px] font-semibold text-ink-2")}>
+    <div className="absolute left-[10%] right-[12%] top-[28%] h-40 overflow-hidden rounded-t-sm bg-white shadow-sm">
+      <div className={cn(inventoryGrid, "py-2 text-[9px] font-semibold text-ink-1")}>
         {columns.map((column) => (
           <span key={column} className="truncate">
             {column}
           </span>
         ))}
       </div>
- 
+
       {rows.map((row) => {
         const status = statusStyles[row.status];
         return (
@@ -104,13 +109,14 @@ function InventoryIllustration() {
     </div>
   );
 }
- 
+
 // -----------------------------------------------------------------------------
-// Performance Insights — "Gross profit over time" chart
+// Performance Insights — "Gross profit over time" chart. Fully inside the
+// frame: the badge's gap to the top edge equals the panel's gap to the bottom.
 // -----------------------------------------------------------------------------
 function GrossProfitIllustration() {
   const { tabs, activeTab, yLabels, xLabels, values } = grossProfitPreview;
- 
+
   // Every point is a percentage so the SVG line and the HTML markers line up.
   const points = values.map((value, index) => ({
     x: (index / (values.length - 1)) * 100,
@@ -118,18 +124,20 @@ function GrossProfitIllustration() {
   }));
   const line = points.map((p, index) => `${index === 0 ? "M" : "L"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
   const area = `${line} L100 100 L0 100 Z`;
- 
+
   return (
     <>
-      <div className="absolute left-5 top-1.5 z-10 flex items-center gap-1.5 rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-ink-1 shadow-sm">
-        <span className="grid size-4 place-items-center rounded bg-brand-50 text-brand-600">
-          <TrendingUp className="size-2.5" />
+      {/* Badge: sits ~17% in from the left and overlaps the top edge of the panel. */}
+      <div className="absolute left-[17%] top-1 z-10 flex items-center gap-2 rounded-lg bg-white py-1.5 pl-1.5 pr-3 text-[11px] font-semibold text-ink-1 shadow-md">
+        <span className="grid size-6 place-items-center rounded-md bg-brand-50 text-brand-600">
+          <TrendingUp className="size-3.5" />
         </span>
         Gross profit over time
       </div>
- 
-      <div className="absolute inset-x-3 bottom-0 top-5 rounded-t-lg bg-white shadow-sm">
-        <div className="flex justify-end px-3 pt-3">
+
+      {/* Panel: 16px from the top, sides and bottom of the frame. */}
+      <div className="absolute inset-x-4 bottom-4 top-4 rounded-lg bg-white shadow-sm">
+        <div className="flex justify-end px-3 pt-2">
           <div className="flex rounded-md border border-neutral-200 p-0.5 text-[8px]">
             {tabs.map((tab) => (
               <span
@@ -144,14 +152,14 @@ function GrossProfitIllustration() {
             ))}
           </div>
         </div>
- 
-        <div className="mx-3 mt-1 flex h-[64px] gap-2">
+
+        <div className="mx-3 mt-1.5 flex h-[72px] gap-2">
           <div className="flex w-9 flex-col justify-between text-[7px] leading-none text-ink-4">
             {yLabels.map((label) => (
               <span key={label}>{label}</span>
             ))}
           </div>
- 
+
           <div className="relative flex-1">
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full">
               <defs>
@@ -175,7 +183,7 @@ function GrossProfitIllustration() {
               <path d={area} fill="url(#gross-profit-fill)" />
               <path d={line} fill="none" stroke="#008c4b" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
             </svg>
- 
+
             {points.map((point, index) => (
               <span
                 key={index}
@@ -185,14 +193,14 @@ function GrossProfitIllustration() {
             ))}
           </div>
         </div>
- 
-        <div className="ml-12 mr-3 mt-1 flex justify-between text-[7px] text-ink-4">
+
+        <div className="ml-12 mr-3 mt-1 flex justify-between text-[7px] leading-none text-ink-4">
           {xLabels.map((label) => (
             <span key={label}>{label}</span>
           ))}
         </div>
- 
-        <div className="mx-3 mt-1.5 flex items-center justify-between text-[8px]">
+
+        <div className="mx-3 mt-1.5 flex items-center justify-between text-[8px] leading-none">
           <span className="text-ink-3">Gross profit is trending upward this month</span>
           <span className="font-semibold text-brand-600">View Report</span>
         </div>
@@ -200,52 +208,62 @@ function GrossProfitIllustration() {
     </>
   );
 }
- 
+
 // -----------------------------------------------------------------------------
-// Multi-Store support — branch selector with a detail card
+// Multi-Store support — branch selector with a detail card. The list sits ~10%
+// in from the left; the detail card is tucked into the bottom-right corner.
 // -----------------------------------------------------------------------------
 function BranchSelectorIllustration() {
   return (
     <>
-      <div className="absolute left-[8%] top-3 w-[38%] rounded-lg bg-white p-2 shadow-sm">
-        <div className="flex items-center justify-between rounded-md border border-neutral-200 px-2 py-1 text-[9px] text-ink-2">
+      <div className="absolute left-[10%] top-2 w-[39%] rounded-lg bg-white p-2 shadow-sm">
+        <div className="flex items-center justify-between rounded-md border border-neutral-200 px-2 py-1 text-[9px] font-medium text-ink-1">
           Select Branch
           <ChevronDown className="size-3" />
         </div>
-        <ul className="mt-1.5 space-y-0.5">
+        <ul className="mt-1 divide-y divide-neutral-100">
           {branchPreview.map((branch) => (
-            <li
-              key={branch.name}
-              className={cn("flex items-center justify-between rounded px-1.5 py-1", branch.active && "bg-brand-50")}
-            >
+            <li key={branch.name} className="flex items-center justify-between gap-1 px-1 py-1">
               <span className="min-w-0">
                 <span className="block truncate text-[9px] font-semibold text-ink-1">{branch.name}</span>
-                <span className="block truncate text-[7px] text-ink-4">{branch.area}</span>
+                <span className="flex items-center gap-0.5 truncate text-[7px] text-ink-4">
+                  <MapPin className="size-2 shrink-0" />
+                  {branch.area}
+                </span>
               </span>
               {branch.active && (
-                <span className="grid size-3.5 shrink-0 place-items-center rounded-full bg-brand-500 text-white">
-                  <Check className="size-2.5" />
+                <span className="grid size-3 shrink-0 place-items-center rounded-sm border border-brand-500 text-brand-600">
+                  <Check className="size-2" strokeWidth={3} />
                 </span>
               )}
             </li>
           ))}
         </ul>
       </div>
- 
-      <div className="absolute left-[40%] top-8 w-[52%] rounded-lg border border-neutral-100 bg-white p-2.5 shadow-md">
-        <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-[10px] font-semibold text-ink-1">Lekki Branch</span>
-          <span className="rounded-full bg-success-bg px-1.5 py-0.5 text-[7px] font-medium text-success-fg">Active</span>
+
+      <div className="absolute bottom-1.5 right-2 w-[51%] rounded-lg border border-neutral-100 bg-white p-2 shadow-md">
+        <p className="flex items-center gap-0.5 text-[6px] leading-none text-ink-3">
+          <ChevronLeft className="size-2" /> Back
+        </p>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <span className="truncate text-[10px] font-semibold leading-none text-ink-1">Lekki Branch</span>
+          <span className="flex items-center gap-0.5 rounded-full bg-success-bg px-1.5 py-0.5 text-[6px] font-medium leading-none text-success-fg">
+            <span className="size-1 rounded-full bg-success-fg" />
+            Active
+          </span>
         </div>
-        <div className="mt-1.5 flex gap-3 border-b border-neutral-100 text-[8px] text-ink-3">
-          <span className="border-b border-brand-500 pb-1 font-semibold text-brand-700">Details</span>
-          <span className="pb-1">Staff</span>
+        <div className="mt-1.5 flex gap-1 border-b border-neutral-100 pb-1 text-[7px] leading-none">
+          <span className="rounded bg-brand-50 px-1.5 py-0.5 font-semibold text-brand-700">Overview</span>
+          <span className="px-1.5 py-0.5 text-ink-3">Staff</span>
         </div>
-        <p className="mt-1.5 text-[8px] font-semibold text-ink-2">Location information</p>
-        <dl className="mt-1 space-y-1">
+        <p className="mt-1.5 text-[7px] font-semibold leading-none text-ink-1">Location Information</p>
+        <dl className="mt-1.5 space-y-1">
           {branchDetails.map((detail) => (
-            <div key={detail.label} className="flex justify-between gap-2 text-[7px]">
-              <dt className="text-ink-4">{detail.label}</dt>
+            <div key={detail.label} className="flex items-center justify-between gap-2 text-[6px] leading-none">
+              <dt className="flex items-center gap-1 text-ink-4">
+                <span className="size-0.5 rounded-full bg-ink-3" />
+                {detail.label} :
+              </dt>
               <dd className="truncate text-ink-2">{detail.value}</dd>
             </div>
           ))}
@@ -254,17 +272,18 @@ function BranchSelectorIllustration() {
     </>
   );
 }
- 
+
 // -----------------------------------------------------------------------------
-// Staff management — user circles around the RIINOX mark, some locked
+// Staff management — mint user circles around the RIINOX mark, some locked.
+// No container: it sits directly on the white card.
 // -----------------------------------------------------------------------------
 const lockedCorners: Record<number, string> = {
-  0: "-left-1 -top-1",
-  5: "-right-1 -top-1",
-  6: "-left-1 -top-1",
-  8: "-right-1 -top-1",
+  0: "-left-2 -top-2",
+  5: "-right-2 -top-2",
+  6: "-left-2 -top-2",
+  8: "-right-2 -top-2",
 };
- 
+
 function StaffIllustration() {
   return (
     <div className="mx-auto grid h-full max-w-[290px] grid-cols-3 place-items-center">
@@ -273,40 +292,31 @@ function StaffIllustration() {
           return (
             <span
               key={index}
-              className="grid size-14 place-items-center rounded-full border border-neutral-200 bg-white text-2xl font-black text-brand-500 shadow-md"
+              className="grid size-14 place-items-center rounded-full border border-neutral-200 bg-white shadow-sm"
             >
-              R
+              <Image src={logo} alt="" width={28} height={28} className="size-7 object-contain" />
             </span>
           );
         }
- 
+
         return (
           <span
             key={index}
             className={cn(
-              "relative grid size-12 place-items-center rounded-full bg-neutral-100 text-ink-1",
+              "relative grid size-12 place-items-center rounded-full bg-brand-50 text-ink-1",
               index === 3 && "translate-x-5",
               index === 5 && "-translate-x-5",
             )}
           >
             <User className="size-5" strokeWidth={1.5} />
-            {lockedCorners[index] && (
-              <span
-                className={cn(
-                  "absolute grid size-5 place-items-center rounded-full border border-neutral-200 bg-white",
-                  lockedCorners[index],
-                )}
-              >
-                <Lock className="size-2.5 text-ink-3" />
-              </span>
-            )}
+            {lockedCorners[index] && <Lock className={cn("absolute size-3 text-ink-3", lockedCorners[index])} />}
           </span>
         );
       })}
     </div>
   );
 }
- 
+
 // -----------------------------------------------------------------------------
 const illustrations: Record<IllustrationKind, () => React.JSX.Element> = {
   sales: PurchaseOrderIllustration,
@@ -315,26 +325,26 @@ const illustrations: Record<IllustrationKind, () => React.JSX.Element> = {
   "multi-store": BranchSelectorIllustration,
   staff: StaffIllustration,
 };
- 
+
 /** Frame (size, background, spacing) for each illustration. */
 const frames: Record<IllustrationKind, string> = {
   sales: "h-[190px] bg-brand-50/70",
   inventory: "h-[190px] bg-brand-50/70",
-  insights: "mx-8 mb-8 h-40 rounded-xl bg-brand-50/70",
-  "multi-store": "mx-8 mb-8 h-40 rounded-xl bg-brand-50/70",
+  insights: "mx-8 mb-8 h-44 rounded-xl bg-brand-50/70",
+  "multi-store": "mx-8 mb-8 h-44 rounded-xl bg-brand-50/70",
   staff: "mx-8 mb-6 h-[170px]",
 };
- 
+
 interface FeatureIllustrationProps {
   kind: IllustrationKind;
   /** Optional Figma export drawn over the coded illustration. */
   image?: string;
   className?: string;
 }
- 
+
 export function FeatureIllustration({ kind, image, className }: FeatureIllustrationProps) {
   const Illustration = illustrations[kind];
- 
+
   return (
     <div aria-hidden className={cn("relative overflow-hidden", frames[kind], className)}>
       <Illustration />
