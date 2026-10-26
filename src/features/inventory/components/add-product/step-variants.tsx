@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useFieldArray, useFormContext } from "react-hook-form";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -11,6 +11,8 @@ import { StepSection, StepSubsection } from "./step-section";
 import { buildVariantNames, type AddProductValues } from "./schema";
 
 export function StepVariants() {
+  const [addingOption, setAddingOption] = useState<number | null>(null);
+  const [optionDraft, setOptionDraft] = useState("");
   const {
     register,
     control,
@@ -55,7 +57,7 @@ export function StepVariants() {
 
   return (
     <StepSection
-      title="3. Variants"
+      title="3. Product Variations"
       description="Add the options this product comes in, such as size or flavour."
     >
       <div className="flex flex-col gap-6">
@@ -88,13 +90,14 @@ export function StepVariants() {
         ) : (
           <>
             <StepSubsection
-              title="Options"
-              description="Separate each value with a comma, e.g. Small, Medium, Large."
+              title="Variant Attributes"
+              description="Define the attributes that will create your variants."
+              className="rounded-xl border border-border p-4"
             >
               {groups.fields.map((field, index) => (
-                <div key={field.id} className="flex items-end gap-2">
+                <div key={field.id} className="grid grid-cols-1 items-start gap-6 rounded-lg border border-border p-5 sm:grid-cols-[1fr_1.1fr_auto]">
                   <Field
-                    label="Option name"
+                    label={`Attribute ${index + 1}`}
                     htmlFor={`option-name-${index}`}
                     error={errors.optionGroups?.[index]?.name?.message}
                     className="flex-1"
@@ -107,17 +110,15 @@ export function StepVariants() {
                     />
                   </Field>
                   <Field
-                    label="Values"
+                    label="Options"
                     htmlFor={`option-values-${index}`}
                     error={errors.optionGroups?.[index]?.values?.message}
                     className="flex-[2]"
                   >
-                    <TextInput
-                      id={`option-values-${index}`}
-                      placeholder="Small, Medium, Large"
-                      invalid={!!errors.optionGroups?.[index]?.values}
-                      {...register(`optionGroups.${index}.values`)}
-                    />
+                    <div className="flex min-h-[50px] flex-wrap items-center gap-3">
+                      {(optionGroups?.[index]?.values ?? "").split(",").map(v => v.trim()).filter(Boolean).map(value => <button key={value} type="button" aria-label={`Remove ${value}`} onClick={() => setValue(`optionGroups.${index}.values`, (optionGroups?.[index]?.values ?? "").split(",").map(v => v.trim()).filter(v => v !== value).join(", "))} className="rounded-full bg-success-bg px-4 py-2 text-sm text-success-fg">{value}<span className="ml-2" aria-hidden>×</span></button>)}
+                    </div>
+                    {addingOption === index ? <div className="mt-2 flex gap-2"><TextInput autoFocus aria-label="New option" value={optionDraft} onChange={e => setOptionDraft(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (optionDraft.trim()) { setValue(`optionGroups.${index}.values`, [optionGroups?.[index]?.values, optionDraft.trim()].filter(Boolean).join(", ")); setOptionDraft(""); setAddingOption(null); } } }} /><button type="button" className="text-sm text-primary" onClick={() => { if (optionDraft.trim()) setValue(`optionGroups.${index}.values`, [optionGroups?.[index]?.values, optionDraft.trim()].filter(Boolean).join(", ")); setOptionDraft(""); setAddingOption(null); }}>Add</button></div> : <button type="button" className="mt-3 flex items-center gap-2 text-sm font-semibold text-primary" onClick={() => { setAddingOption(index); setOptionDraft(""); }}><PlusIcon className="size-4" />Add Option</button>}
                   </Field>
                   <button
                     type="button"
@@ -136,12 +137,13 @@ export function StepVariants() {
                 className="flex w-fit items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-brand-700"
               >
                 <PlusIcon className="size-4" />
-                Add Option
+                Add Another Attribute
               </button>
             </StepSubsection>
 
             <StepSubsection
-              title="Generated Variants"
+              title={`Generated Variants (${variantNames.length})`}
+              className="rounded-lg bg-success-bg p-4"
               description="Each variant inherits the product SKU, barcode and pricing unless overridden."
             >
               {variantNames.length === 0 ? (

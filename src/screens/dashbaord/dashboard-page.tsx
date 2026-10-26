@@ -1,17 +1,17 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { DownloadIcon, FolderSearchIcon, TrendingUpIcon, TriangleAlertIcon } from "lucide-react";
+import { DownloadIcon, TriangleAlertIcon } from "lucide-react";
 import { SecondaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
-import { StatCard, StatCardSkeleton } from "@/components/common/stat-card";
+import { StatCardSkeleton } from "@/components/common/stat-card";
 import { useBranch } from "@/context/branch-context";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { BranchSelector } from "@/layout/branch-selector";
 import { TopbarAction } from "@/layout/app-topbar";
-import { formatCurrencyCompact } from "@/lib/format";
+import { formatCurrencyCompact, formatPercentDelta } from "@/lib/format";
 import { AddProductDialog } from "@/features/inventory/components/add-product/add-product-dialog";
+import { InventoryStatCard } from "@/features/inventory/components/inventory-stat-card";
 import { dashboardService } from "@/lib/dashboard.service";
 import { PeriodSelector } from "@/features/dashboard/period-selector";
 import { QuickAddMenu } from "@/features/dashboard/quick-add-menu";
@@ -51,19 +51,19 @@ function downloadTransactionsCsv(transactions: DashboardTransaction[], branchNam
   URL.revokeObjectURL(url);
 }
 
+/** Same pill as the stat cards: success/danger tokens and the trend-line arrow. */
 function DeltaBadge({ value }: { value: number }) {
   const positive = value >= 0;
   return (
     <span
-      className={
-        positive
-          ? "inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700"
-          : "inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-destructive"
-      }
+      className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-1 text-[10px] leading-3 ${
+        positive ? "bg-success-bg text-success-fg" : "bg-danger-bg text-danger-fg"
+      }`}
     >
-      <TrendingUpIcon className={positive ? "size-3" : "size-3 -scale-y-100"} />
-      {positive ? "+" : ""}
-      {value}%
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" className="size-2" aria-hidden="true">
+        <path d={positive ? "m1 8 3-3 3 2 4-5M8 2h3v3" : "m1 3 3 3 3-2 4 5M8 9h3V6"} />
+      </svg>
+      {formatPercentDelta(value)}
     </span>
   );
 }
@@ -125,34 +125,31 @@ export default function DashboardPage() {
         </section>
       ) : (
         <>
-          <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          {/* Same cards and grid as the inventory page: green icon, compact value, delta pill. */}
+          <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {showSkeleton || !overview ? (
               Array.from({ length: 4 }).map((_, index) => <StatCardSkeleton key={index} />)
             ) : (
               <>
-                <StatCard
-                  icon={FolderSearchIcon}
+                <InventoryStatCard
                   label="Sales"
                   value={formatCurrencyCompact(overview.sales)}
                   description="Total sales made"
                   delta={overview.salesDelta}
                 />
-                <StatCard
-                  icon={FolderSearchIcon}
+                <InventoryStatCard
                   label="Expenses"
                   value={formatCurrencyCompact(overview.expenses)}
                   description="Total money spent"
                   delta={overview.expensesDelta}
                 />
-                <StatCard
-                  icon={FolderSearchIcon}
+                <InventoryStatCard
                   label="Net Profit"
                   value={formatCurrencyCompact(overview.netProfit)}
                   description="After expenses and refunds"
                   delta={overview.netProfitDelta}
                 />
-                <StatCard
-                  icon={FolderSearchIcon}
+                <InventoryStatCard
                   label="Refunds"
                   value={formatCurrencyCompact(overview.refunds)}
                   description="Returned to customers"

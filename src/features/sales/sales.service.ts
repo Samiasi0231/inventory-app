@@ -134,7 +134,8 @@ export const salesService = {
     );
   },
 
-  async listSellableProducts(_params: { branchId?: ID } = {}): Promise<SellableProduct[]> {
+  async listSellableProducts(params: { branchId?: ID } = {}): Promise<SellableProduct[]> {
+    void params;
     await sleep(400);
     return MOCK_SELLABLE_PRODUCTS;
   },
@@ -159,6 +160,7 @@ export const salesService = {
       payload.lines,
       payload.discountMode,
       payload.discountValue,
+      payload.vatRate,
     );
     const amountPaid = payload.payments.reduce((sum, payment) => sum + payment.amount, 0);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { ProductDataTable } from "../product-data-table";
 import { useFormContext } from "react-hook-form";
 import { useBranch } from "@/context/branch-context";
 import { formatCurrency } from "@/lib/format";
@@ -203,6 +204,10 @@ export function StepReview({ onEditStep }: { onEditStep: (index: number) => void
           </div>
         )}
       </ReviewCard>
+      {values.trackInventory && <ReviewCard title="Opening Stock & Batch Details" onEdit={() => onEditStep(3)}>
+        <p className="mb-5 text-xs text-ink-4">Each variant is assigned opening stock and batch details for its location.</p>
+        <ProductDataTable headers={["Variant", "Location", "Batch No.", "Quantity", "Unit", "Expiry Date"]} rows={(values.openingStock ?? []).map(stock => { const batch = values.batches?.find(b => b.variantName === stock.variantName && b.branchId === stock.branchId); return [stock.variantName, branches.find(b => b.id === stock.branchId)?.name ?? "—", batch?.batchNumber || "—", String(stock.quantity), values.baseUnit, batch?.expiryDate || "—"]; })} />
+      </ReviewCard>}
     </div>
   );
 }

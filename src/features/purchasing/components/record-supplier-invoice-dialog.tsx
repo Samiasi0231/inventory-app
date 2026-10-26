@@ -1,24 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { z } from "zod";
-import { FormDialog } from "@/components/common/form-dialog";
+import { PurchaseDialog } from "./purchase-dialog";
+import { PurchaseDateInput } from "./purchase-date-input";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
-import { Field, SelectInput, TextInput, TextareaInput } from "@/components/form/app-fields";
+import {
+  Field,
+  SelectInput,
+  TextInput,
+  TextareaInput,
+} from "@/components/form/app-fields";
 import { Stepper } from "@/components/ui/stepper";
 import { useToast } from "@/components/ui/toast";
 import { formatNumber } from "@/lib/format";
 import { MOCK_SUPPLIERS } from "@/features/inventory/mock-data";
 import { purchasingService } from "../purchasing.service";
 import type { PurchaseOrder } from "../types";
-import { GrandTotalBar, ReviewCard, ReviewRow, formatReviewDate } from "./review";
+import {
+  GrandTotalBar,
+  ReviewCard,
+  ReviewRow,
+  formatReviewDate,
+} from "./review";
 
 const CREATED_BY_OPTIONS = ["Inventory Manager", "Branch Manager", "Owner"];
 
-const INVOICE_TYPES = [{ value: "supplier_invoice", label: "Supplier Invoice" }];
+const INVOICE_TYPES = [
+  { value: "supplier_invoice", label: "Supplier Invoice" },
+];
 
 const TAX_LABEL = "Standard VAT 7.5%";
 
@@ -101,7 +114,6 @@ export function RecordSupplierInvoiceDialog({
     handleSubmit,
     trigger,
     reset,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<InvoiceValues>({
     resolver: zodResolver(schema),
@@ -110,7 +122,8 @@ export function RecordSupplierInvoiceDialog({
   });
 
   const { fields } = useFieldArray({ control, name: "lines" });
-  const lines = watch("lines") ?? [];
+  const values = useWatch({ control }) as InvoiceValues;
+  const lines = values.lines ?? [];
   const total = lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
   function handleOpenChange(nextOpen: boolean) {
@@ -142,10 +155,13 @@ export function RecordSupplierInvoiceDialog({
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      const { reference } = await purchasingService.recordSupplierInvoice(order.id, {
-        ...values,
-        total,
-      });
+      const { reference } = await purchasingService.recordSupplierInvoice(
+        order.id,
+        {
+          ...values,
+          total,
+        },
+      );
       toast.add({
         type: "success",
         title: "Supplier invoice recorded",
@@ -163,12 +179,15 @@ export function RecordSupplierInvoiceDialog({
   });
 
   const supplierName =
-    MOCK_SUPPLIERS.find((supplier) => supplier.id === watch("supplierId"))?.name ?? "—";
+    MOCK_SUPPLIERS.find((supplier) => supplier.id === values.supplierId)
+      ?.name ?? "—";
   const invoiceTypeLabel =
-    INVOICE_TYPES.find((type) => type.value === watch("invoiceType"))?.label ?? "—";
+    INVOICE_TYPES.find((type) => type.value === values.invoiceType)?.label ??
+    "—";
 
   return (
-    <FormDialog
+    <PurchaseDialog
+      className={`purchase-invoice-dialog ${isLastStep ? "purchase-review-dialog" : ""}`}
       open={open}
       onOpenChange={handleOpenChange}
       title="Record Supplier Invoice"
@@ -176,9 +195,15 @@ export function RecordSupplierInvoiceDialog({
       footer={
         <>
           <SecondaryButton
-            onClick={() => (stepIndex === 0 ? handleOpenChange(false) : setStepIndex((i) => i - 1))}
+            onClick={() =>
+              stepIndex === 0
+                ? handleOpenChange(false)
+                : setStepIndex((i) => i - 1)
+            }
             disabled={isSubmitting}
-            leftIcon={stepIndex > 0 ? <ArrowLeftIcon className="size-4" /> : undefined}
+            leftIcon={
+              stepIndex > 0 ? <ArrowLeftIcon className="size-4" /> : undefined
+            }
           >
             {stepIndex === 0 ? "Cancel" : "Back"}
           </SecondaryButton>
@@ -188,14 +213,17 @@ export function RecordSupplierInvoiceDialog({
               Record Invoice
             </PrimaryButton>
           ) : (
-            <PrimaryButton onClick={goNext} rightIcon={<ArrowRightIcon className="size-4" />}>
+            <PrimaryButton
+              onClick={goNext}
+              rightIcon={<ArrowRightIcon className="size-4" />}
+            >
               Next
             </PrimaryButton>
           )}
         </>
       }
     >
-      <div className="flex flex-col gap-6">
+      <div className="purchase-body flex flex-col gap-6">
         <Stepper
           steps={STEPS}
           currentIndex={stepIndex}
@@ -205,13 +233,26 @@ export function RecordSupplierInvoiceDialog({
 
         <form onSubmit={(event) => event.preventDefault()}>
           {stepIndex === 0 && (
-            <div className="flex flex-col gap-4">
+            <div className="purchase-invoice-fields flex flex-col gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Billed To" htmlFor="billedTo" error={errors.billedTo?.message}>
-                  <TextInput id="billedTo" invalid={!!errors.billedTo} {...register("billedTo")} />
+                <Field
+                  label="Billed To"
+                  htmlFor="billedTo"
+                  error={errors.billedTo?.message}
+                >
+                  <TextInput
+                    id="billedTo"
+                    className="purchase-filled"
+                    invalid={!!errors.billedTo}
+                    {...register("billedTo")}
+                  />
                 </Field>
 
-                <Field label="Created by" htmlFor="inv-createdBy" error={errors.createdBy?.message}>
+                <Field
+                  label="Created by"
+                  htmlFor="inv-createdBy"
+                  error={errors.createdBy?.message}
+                >
                   <SelectInput id="inv-createdBy" {...register("createdBy")}>
                     {CREATED_BY_OPTIONS.map((option) => (
                       <option key={option} value={option}>
@@ -221,8 +262,16 @@ export function RecordSupplierInvoiceDialog({
                   </SelectInput>
                 </Field>
 
-                <Field label="Invoice Type" htmlFor="invoiceType" error={errors.invoiceType?.message}>
-                  <SelectInput id="invoiceType" {...register("invoiceType")}>
+                <Field
+                  label="Invoice Type"
+                  htmlFor="invoiceType"
+                  error={errors.invoiceType?.message}
+                >
+                  <SelectInput
+                    id="invoiceType"
+                    className="purchase-filled"
+                    {...register("invoiceType")}
+                  >
                     {INVOICE_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
                         {type.label}
@@ -231,7 +280,11 @@ export function RecordSupplierInvoiceDialog({
                   </SelectInput>
                 </Field>
 
-                <Field label="Supplier" htmlFor="inv-supplier" error={errors.supplierId?.message}>
+                <Field
+                  label="Supplier"
+                  htmlFor="inv-supplier"
+                  error={errors.supplierId?.message}
+                >
                   <SelectInput
                     id="inv-supplier"
                     invalid={!!errors.supplierId}
@@ -247,11 +300,21 @@ export function RecordSupplierInvoiceDialog({
                 </Field>
 
                 <Field label="Issue Date" htmlFor="issueDate">
-                  <TextInput id="issueDate" type="date" {...register("issueDate")} />
+                  <PurchaseDateInput
+                    id="issueDate"
+                    displayValue={values.issueDate}
+                    placeholder="Select Date Issues"
+                    {...register("issueDate")}
+                  />
                 </Field>
 
                 <Field label="Due Date" htmlFor="dueDate">
-                  <TextInput id="dueDate" type="date" {...register("dueDate")} />
+                  <PurchaseDateInput
+                    id="dueDate"
+                    displayValue={values.dueDate}
+                    placeholder="Select Due Date"
+                    {...register("dueDate")}
+                  />
                 </Field>
               </div>
 
@@ -267,7 +330,7 @@ export function RecordSupplierInvoiceDialog({
 
           {stepIndex === 1 && (
             <div className="flex flex-col gap-4">
-              <div className="overflow-x-auto rounded-lg border border-border/70">
+              <div className="purchase-line-table purchase-invoice-table overflow-x-auto rounded-lg border border-border/70">
                 <div className="grid min-w-[760px] grid-cols-[1.2fr_1.1fr_0.7fr_0.8fr_1fr_1.1fr_1.1fr] gap-3 bg-surface-muted px-4 py-3 text-[11px] font-semibold text-ink-1">
                   <span>Product</span>
                   <span>Variant</span>
@@ -314,7 +377,7 @@ export function RecordSupplierInvoiceDialog({
                 ))}
               </div>
 
-              <dl className="flex flex-col gap-3 border-t border-border/60 pt-4 text-xs">
+              <dl className="purchase-invoice-totals flex flex-col gap-3 border-t border-border/60 pt-4 text-xs">
                 <SummaryRow label="Tax" value={TAX_LABEL} />
                 <SummaryRow label="Discounts" value="₦0" />
                 <SummaryRow label="TOTAL" value={`₦${formatNumber(total)}`} />
@@ -325,23 +388,30 @@ export function RecordSupplierInvoiceDialog({
           {stepIndex === 2 && (
             <div className="flex flex-col gap-5">
               <ReviewCard title="Invoice Details">
-                <ReviewRow label="Billed To:" value={watch("billedTo") || "Not provided"} />
-                <ReviewRow label="Created by:" value={watch("createdBy")} />
+                <ReviewRow
+                  label="Billed To:"
+                  value={values.billedTo || "Not provided"}
+                />
+                <ReviewRow label="Created by:" value={values.createdBy} />
                 <ReviewRow label="Invoice Type:" value={invoiceTypeLabel} />
                 <ReviewRow label="Supplier:" value={supplierName} />
                 <ReviewRow
                   label="Issue Date:"
-                  value={formatReviewDate(watch("issueDate"), "Not provided")}
+                  value={formatReviewDate(values.issueDate, "Not provided")}
                 />
                 <ReviewRow
                   label="Due Date:"
-                  value={formatReviewDate(watch("dueDate"), "Not provided")}
+                  value={formatReviewDate(values.dueDate, "Not provided")}
                 />
-                <ReviewRow label="Note:" value={watch("notes") || "Not provided"} wrap />
+                <ReviewRow
+                  label="Note:"
+                  value={values.notes || "Not provided"}
+                  wrap
+                />
               </ReviewCard>
 
               <ReviewCard title="Products">
-                <div className="overflow-x-auto rounded-lg border border-border/70">
+                <div className="purchase-line-table purchase-invoice-table overflow-x-auto rounded-lg border border-border/70">
                   <div className="grid min-w-[620px] grid-cols-[1.2fr_1.1fr_0.7fr_0.8fr_0.9fr_1fr_1fr] gap-3 bg-surface-muted px-4 py-3 text-[11px] font-semibold text-ink-1">
                     <span>Product</span>
                     <span>Variant</span>
@@ -373,7 +443,7 @@ export function RecordSupplierInvoiceDialog({
           )}
         </form>
       </div>
-    </FormDialog>
+    </PurchaseDialog>
   );
 }
 

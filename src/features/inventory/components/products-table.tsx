@@ -63,7 +63,12 @@ export function ProductsTable({
 }: ProductsTableProps) {
   return (
     // Below ~900px the columns squash, so the table scrolls horizontally.
-    <Table className="min-w-[900px]">
+    <Table className="min-w-[1096px] table-fixed">
+      <colgroup>
+        {[92, 217, 217, 98, 114, 140, 140, 78].map((width, index) => (
+          <col key={index} style={{ width: `${width / 1096 * 100}%` }} />
+        ))}
+      </colgroup>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {COLUMNS.map((column) => {
@@ -86,12 +91,12 @@ export function ProductsTable({
                   <button
                     type="button"
                     onClick={() => onSortChange(column.id as SortableColumn)}
-                    className="group/sort inline-flex items-center gap-1 rounded transition-colors hover:text-primary"
+                    className="group/sort relative inline-flex items-center gap-1 rounded transition-colors hover:text-primary"
                   >
                     {column.label}
                     <SortIcon
                       className={cn(
-                        "size-3 transition-opacity",
+                        "absolute -right-4 size-3 transition-opacity",
                         isSorted
                           ? "opacity-100"
                           : "opacity-0 group-hover/sort:opacity-60",
@@ -122,7 +127,7 @@ export function ProductsTable({
               <TableRow key={item.id}>
                 <TableCell className="w-[92px]">{item.itemCode}</TableCell>
                 <TableCell className="max-w-0 truncate" title={item.name}>
-                  {item.name}
+                  <span className="block max-w-[128px] truncate">{item.name}</span>
                 </TableCell>
                 <TableCell className="max-w-0 truncate" title={item.categoryName}>
                   {item.categoryName}

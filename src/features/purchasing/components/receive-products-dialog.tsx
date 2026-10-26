@@ -1,9 +1,10 @@
 "use client";
 
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { FormDialog } from "@/components/common/form-dialog";
+import { PurchaseDialog } from "./purchase-dialog";
+import { PurchaseDateInput } from "./purchase-date-input";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { TextInput } from "@/components/form/app-fields";
 import { useToast } from "@/components/ui/toast";
@@ -66,6 +67,7 @@ export function ReceiveProductsDialog({
   });
 
   const { fields } = useFieldArray({ control, name: "lines" });
+  const lines = useWatch({ control, name: "lines" });
 
   const onSubmit = handleSubmit(async (values) => {
     const received = values.lines.filter((line) => Number(line.received) > 0);
@@ -97,19 +99,27 @@ export function ReceiveProductsDialog({
       onOpenChange(false);
       onSuccess?.();
     } catch {
-      toast.add({ type: "error", title: "Couldn't receive stock", description: "Please try again." });
+      toast.add({
+        type: "error",
+        title: "Couldn't receive stock",
+        description: "Please try again.",
+      });
     }
   });
 
   return (
-    <FormDialog
+    <PurchaseDialog
+      className="purchase-receive-dialog"
       open={open}
       onOpenChange={onOpenChange}
       title="Receive Products"
       description={`Enter the quantities actually received for ${order.purchaseId}`}
       footer={
         <>
-          <SecondaryButton onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <SecondaryButton
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </SecondaryButton>
           <PrimaryButton onClick={onSubmit} loading={isSubmitting}>
@@ -119,7 +129,7 @@ export function ReceiveProductsDialog({
       }
     >
       <form onSubmit={onSubmit}>
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="purchase-line-table purchase-receive-table overflow-x-auto rounded-lg border border-border">
           <div className="grid min-w-[760px] grid-cols-[1.1fr_1fr_0.7fr_0.8fr_0.7fr_1fr_1fr] gap-3 bg-surface-muted px-4 py-3 text-xs font-semibold text-ink-1">
             <span>Product</span>
             <span>Variant</span>
@@ -153,9 +163,10 @@ export function ReceiveProductsDialog({
                 className="h-9 text-sm"
                 {...register(`lines.${index}.batchNumber`)}
               />
-              <TextInput
+              <PurchaseDateInput
+                displayValue={lines?.[index]?.expiryDate}
+                showIcon={false}
                 aria-label={`Expiry date for ${field.variant}`}
-                type="date"
                 className="h-9 text-sm"
                 {...register(`lines.${index}.expiryDate`)}
               />
@@ -163,6 +174,6 @@ export function ReceiveProductsDialog({
           ))}
         </div>
       </form>
-    </FormDialog>
+    </PurchaseDialog>
   );
 }

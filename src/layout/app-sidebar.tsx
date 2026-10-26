@@ -72,7 +72,10 @@ function NavSection({ item, pathname }: { item: NavItem; pathname: string }) {
 
       {expanded &&
         item.children.map((child) => {
-          const childActive = pathname.startsWith(child.href);
+          const childActive =
+            pathname === "/sales/new"
+              ? child.href === "/purchasing/orders"
+              : pathname.startsWith(child.href);
           return (
             <Link
               key={child.href}

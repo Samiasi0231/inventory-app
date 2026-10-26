@@ -38,6 +38,14 @@ export interface SalesOrderLine {
   expiryDate?: ISODateString;
 }
 
+export interface OrderPayment {
+  id: string; date: string; method: string; reference: string; amount: number; receivedBy: string;
+}
+export interface OrderReturn {
+  id: string; date: string; items: number; reason: string; amount: number;
+  status: "Completed" | "Approved" | "Rejected"; recordedBy: string;
+}
+
 export interface SalesOrder {
   id: ID;
   orderId: string;
@@ -51,6 +59,16 @@ export interface SalesOrder {
   branchId: ID;
   lines: SalesOrderLine[];
   sourcePurchaseId?: string;
+  deliveryMethod?: string;
+  deliveryCost?: number;
+  discount?: number;
+  vat?: number;
+  invoiceNumber?: string;
+  proposal?: string;
+  proposedPrice?: number;
+  rejectionNote?: string;
+  payments?: OrderPayment[];
+  returns?: OrderReturn[];
 }
 
 export function getOrderBalance(order: Pick<SalesOrder, "total" | "amountPaid">) {
@@ -80,6 +98,7 @@ export interface SalesOrderSummary {
 export interface SalesOrderListParams extends ListParams {
   branchId?: ID;
   status?: OrderStatus | "all";
+  payment?: OrderPaymentStatus | "all";
 }
 
 export type OrderAction =

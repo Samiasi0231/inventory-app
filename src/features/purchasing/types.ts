@@ -1,6 +1,7 @@
 import type { ID, ISODateString, ListParams } from "@/types/shared";
 
-export type PurchasePaymentStatus = "unpaid" | "partially_paid" | "paid" | "refunded";
+export type PurchasePaymentStatus =
+  "unpaid" | "partially_paid" | "paid" | "refunded";
 
 export const PURCHASE_PAYMENT_LABELS: Record<PurchasePaymentStatus, string> = {
   unpaid: "Unpaid",
@@ -26,7 +27,7 @@ export const PURCHASE_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
   pending_approval: "Pending Approval",
   approved: "Approved",
   sent_to_supplier: "Sent to Supplier",
-  awaiting_supplier: "Awaiting Supplier Response",
+  awaiting_supplier: "Awaiting Supplier",
   confirmed: "Confirmed",
   partially_received: "Partially Received",
   received: "Received",
@@ -61,11 +62,15 @@ export interface PurchaseOrder {
   lines: PurchaseOrderLine[];
 }
 
-export function getPurchaseBalance(order: Pick<PurchaseOrder, "totalAmount" | "amountPaid">) {
+export function getPurchaseBalance(
+  order: Pick<PurchaseOrder, "totalAmount" | "amountPaid">,
+) {
   return Math.max(0, order.totalAmount - order.amountPaid);
 }
 
-export function getPurchasePaymentStatus(order: PurchaseOrder): PurchasePaymentStatus {
+export function getPurchasePaymentStatus(
+  order: PurchaseOrder,
+): PurchasePaymentStatus {
   if (order.status === "cancelled" && order.amountPaid > 0) return "refunded";
   if (order.amountPaid <= 0) return "unpaid";
   if (order.amountPaid >= order.totalAmount) return "paid";
@@ -113,61 +118,53 @@ export interface PurchaseMenuEntry {
 
 export function getPurchaseActions(order: PurchaseOrder): PurchaseMenuEntry[] {
   const view: PurchaseMenuEntry = { id: "view", label: "View Details" };
+  if (order.status === "draft")
+    return [
+      view,
+      { id: "edit", label: "Edit" },
+      { id: "submit_approval", label: "Submit for Approval" },
+    ];
+  if (order.status === "approved")
+    return [
+      view,
+      { id: "send_to_supplier", label: "Send to Supplier" },
+      { id: "edit", label: "Edit" },
+      { id: "cancel", label: "Cancel Order" },
+    ];
+  if (order.status === "sent_to_supplier")
+    return [
+      view,
+      { id: "cancel", label: "Cancel Order" },
+      { id: "view_supplier_response", label: "View Supplier Response" },
+    ];
 
-  switch (order.status) {
-    case "draft":
-      return [
-        view,
-        { id: "edit", label: "Edit" },
-        { id: "submit_approval", label: "Submit for Approval" },
-      ];
-    case "pending_approval":
-      return [view, { id: "cancel_request", label: "Cancel Request" }];
-    case "approved":
-      return [
-        view,
-        { id: "send_to_supplier", label: "Send to Supplier" },
-        { id: "edit", label: "Edit" },
-        { id: "cancel", label: "Cancel" },
-      ];
-    case "sent_to_supplier":
-    case "awaiting_supplier":
-      return [
-        view,
-        { id: "cancel", label: "Cancel Order" },
-        { id: "view_supplier_response", label: "View Supplier Response" },
-      ];
-    case "confirmed":
-      return [
-        view,
-        { id: "receive", label: "Receive Goods" },
-        { id: "record_invoice", label: "Record Supplier Invoice" },
-        { id: "record_payment", label: "Record Payment" },
-      ];
-    case "partially_received":
-      return [
-        view,
-        { id: "receive_remaining", label: "Receive Remaining" },
-        { id: "record_invoice", label: "Record Supplier Invoice" },
-        { id: "view_returns", label: "View Returns" },
-      ];
-    case "received":
-      return [
-        view,
-        { id: "record_invoice", label: "Record Supplier Invoice" },
-        { id: "record_payment", label: "Record Payment" },
-        { id: "return", label: "Return Products" },
-      ];
-    case "completed":
-      return [
-        view,
-        { id: "view_received", label: "View Received Goods" },
-        { id: "view_payments", label: "View Payments" },
-        { id: "view_returns", label: "View Returns" },
-      ];
-    case "cancelled":
-      return [view];
-  }
+  const canReceive = [
+    "awaiting_supplier",
+    "partially_received",
+    "confirmed",
+  ].includes(order.status);
+  const isClosed = order.status === "completed" || order.status === "cancelled";
+  const canAct = !isClosed && order.status !== "pending_approval";
+  return [
+    view,
+    { id: "receive", label: "Receive Products", disabled: !canReceive },
+    {
+      id: "record_invoice",
+      label: "Record Supplier Invoice",
+      disabled: !canReceive,
+    },
+    {
+      id: "return",
+      label: "Return Goods",
+      disabled: !canAct || order.fulfilled <= 0,
+    },
+    {
+      id: "record_payment",
+      label: "Record Payment",
+      disabled: !canAct || getPurchaseBalance(order) <= 0,
+    },
+    { id: "cancel", label: "Cancel Order", disabled: isClosed },
+  ];
 }
 
 export const RETURN_REASONS = [
@@ -190,6 +187,18 @@ export const PURCHASE_PAYMENT_METHODS = [
   { value: "card", label: "Card" },
 ];
 
-export const PURCHASE_UNITS = ["Piece", "Carton (24)", "Carton (12)", "Bag", "Roll", "Bottle"];
+export const PURCHASE_UNITS = [
+  "Piece",
+  "Carton (24)",
+  "Carton (12)",
+  "Bag",
+  "Roll",
+  "Bottle",
+];
 
-export const PRODUCT_VARIANTS = ["Original", "Large / Milk", "Small / Dark", "Medium / Milk"];
+export const PRODUCT_VARIANTS = [
+  "Original",
+  "Large / Milk",
+  "Small / Dark",
+  "Medium / Milk",
+];

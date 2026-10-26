@@ -7,6 +7,7 @@ import {
   ChevronDownIcon,
   ClockIcon,
   DownloadIcon,
+  FilterIcon,
   PlusIcon,
   SearchIcon,
   ShoppingCartIcon,
@@ -40,6 +41,7 @@ import { ReceiveProductsDialog } from "@/features/purchasing/components/receive-
 import { RecordPaymentDialog } from "@/features/purchasing/components/record-payment-dialog";
 import { RecordSupplierInvoiceDialog } from "@/features/purchasing/components/record-supplier-invoice-dialog";
 import { ReturnProductsDialog } from "@/features/purchasing/components/return-products-dialog";
+import { exportPurchases } from "@/features/purchasing/export-purchases";
 import { purchasingService } from "@/features/purchasing/purchasing.service";
 import {
   PURCHASE_STATUS_LABELS,
@@ -52,11 +54,15 @@ const SCOPES: { value: PurchaseOrderStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
   { value: "pending_approval", label: PURCHASE_STATUS_LABELS.pending_approval },
   { value: "awaiting_supplier", label: "Awaiting Supplier" },
-  { value: "partially_received", label: PURCHASE_STATUS_LABELS.partially_received },
+  {
+    value: "partially_received",
+    label: PURCHASE_STATUS_LABELS.partially_received,
+  },
   { value: "completed", label: PURCHASE_STATUS_LABELS.completed },
 ];
 
-type DialogKind = "receive" | "invoice" | "return" | "payment" | "cancel" | null;
+type DialogKind =
+  "receive" | "invoice" | "return" | "payment" | "cancel" | null;
 
 const ACTION_WAITING_LABELS: Record<
   "edit" | "submit_approval" | "send_to_supplier" | "view_supplier_response",
@@ -119,7 +125,8 @@ export default function PurchaseOrdersPage() {
   const total = resource?.list.total ?? 0;
   const summary = resource?.summary;
   const hasFilters = Boolean(debouncedSearch) || status !== "all";
-  const activeScope = SCOPES.find((scope) => scope.value === status) ?? SCOPES[0];
+  const activeScope =
+    SCOPES.find((scope) => scope.value === status) ?? SCOPES[0];
 
   function handleSortChange(column: string) {
     setPage(1);
@@ -187,14 +194,18 @@ export default function PurchaseOrdersPage() {
       setDialog(null);
       refetch();
     } catch {
-      toast.add({ type: "error", title: "Couldn't cancel order", description: "Please try again." });
+      toast.add({
+        type: "error",
+        title: "Couldn't cancel order",
+        description: "Please try again.",
+      });
     } finally {
       setCancelling(false);
     }
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="purchase-orders-page flex min-w-0 flex-col gap-6">
       <TopbarAction>
         <PrimaryButton
           onClick={() => setCreateOpen(true)}
@@ -206,17 +217,19 @@ export default function PurchaseOrdersPage() {
         </PrimaryButton>
       </TopbarAction>
 
-      <section className="flex flex-col gap-4 rounded-xl bg-surface p-5 sm:flex-row sm:items-end sm:justify-between">
+      <section className="purchase-orders-heading flex flex-col gap-4 rounded-xl bg-surface p-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold text-ink-1">Purchase Order</h1>
           <p className="mt-2 text-base text-ink-1">
-            Track and manage your business purchases, suppliers, and incoming stock.
+            Track and manage your business purchases, suppliers, and incoming
+            stock.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <BranchSelector />
           <button
             type="button"
+            onClick={() => exportPurchases(orders)}
             className="flex h-8 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-bold tracking-[0.14px] text-primary transition-colors hover:bg-surface-muted"
           >
             <DownloadIcon className="size-4" />
@@ -225,9 +238,11 @@ export default function PurchaseOrdersPage() {
         </div>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="purchase-order-stats grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {loading || !summary ? (
-          Array.from({ length: 4 }).map((_, index) => <StatCardSkeleton key={index} />)
+          Array.from({ length: 4 }).map((_, index) => (
+            <StatCardSkeleton key={index} />
+          ))
         ) : (
           <>
             <StatCard
@@ -262,9 +277,9 @@ export default function PurchaseOrdersPage() {
         )}
       </section>
 
-      <section className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex h-[42px] w-full items-center gap-2 rounded-lg border border-border px-4 py-2 sm:max-w-[560px]">
+      <section className="purchase-orders-panel flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
+        <div className="purchase-toolbar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="purchase-search flex h-[42px] w-full items-center gap-2 rounded-lg border border-border px-4 py-2 sm:max-w-[560px]">
             <SearchIcon className="size-5 shrink-0 text-ink-4" />
             <input
               type="search"
@@ -297,7 +312,9 @@ export default function PurchaseOrdersPage() {
                     <span
                       className={cn(
                         "size-1.5 rounded-full",
-                        status === scope.value ? "bg-primary" : "bg-transparent",
+                        status === scope.value
+                          ? "bg-primary"
+                          : "bg-transparent",
                       )}
                     />
                     {scope.label}
@@ -306,13 +323,26 @@ export default function PurchaseOrdersPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <button
-              type="button"
-              className="flex h-8 items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-bold tracking-[0.14px] text-primary transition-colors hover:bg-surface-muted"
-          >
-              Filter
-              <ChevronDownIcon className="size-4" />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex h-8 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-primary">
+                <FilterIcon size={16} strokeWidth={1.5} />
+                Filter
+                <ChevronDownIcon size={16} strokeWidth={1.5} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {SCOPES.map((scope) => (
+                  <DropdownMenuItem
+                    key={scope.value}
+                    onClick={() => {
+                      setStatus(scope.value);
+                      setPage(1);
+                    }}
+                  >
+                    {scope.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -321,12 +351,18 @@ export default function PurchaseOrdersPage() {
             icon={TriangleAlertIcon}
             title="We couldn't load your purchase orders"
             description={error}
-            action={<SecondaryButton onClick={refetch}>Try again</SecondaryButton>}
+            action={
+              <SecondaryButton onClick={refetch}>Try again</SecondaryButton>
+            }
           />
         ) : !loading && orders.length === 0 ? (
           <EmptyState
             icon={ShoppingCartIcon}
-            title={hasFilters ? "No orders match your filters" : "No purchase orders yet"}
+            title={
+              hasFilters
+                ? "No orders match your filters"
+                : "No purchase orders yet"
+            }
             description={
               hasFilters
                 ? "Try a different search term or status."
@@ -360,7 +396,13 @@ export default function PurchaseOrdersPage() {
               onSortChange={handleSortChange}
               onAction={handleAction}
             />
-            <Pagination page={page} pageSize={15} total={total} onPageChange={setPage} />
+            <Pagination
+              className="purchase-orders-pagination"
+              page={page}
+              pageSize={15}
+              total={total}
+              onPageChange={setPage}
+            />
           </>
         )}
       </section>
@@ -403,11 +445,16 @@ export default function PurchaseOrdersPage() {
         onOpenChange={(open) => setDialog(open ? "cancel" : null)}
         title="Cancel order"
         description={
-          activeOrder ? `${activeOrder.purchaseId} will be marked as cancelled.` : undefined
+          activeOrder
+            ? `${activeOrder.purchaseId} will be marked as cancelled.`
+            : undefined
         }
         footer={
           <>
-            <SecondaryButton onClick={() => setDialog(null)} disabled={cancelling}>
+            <SecondaryButton
+              onClick={() => setDialog(null)}
+              disabled={cancelling}
+            >
               Keep order
             </SecondaryButton>
             <PrimaryButton
@@ -421,7 +468,8 @@ export default function PurchaseOrdersPage() {
         }
       >
         <p className="text-sm text-ink-3">
-          Cancelling keeps the record for audit. Any payment already made will show as refunded.
+          Cancelling keeps the record for audit. Any payment already made will
+          show as refunded.
         </p>
       </FormDialog>
 

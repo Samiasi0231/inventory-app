@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  CreditCardIcon,
+  PackageIcon,
+  RotateCcwIcon,
+  Trash2Icon,
   ArchiveRestoreIcon,
   MessageSquareIcon,
   PencilIcon,
@@ -42,7 +46,6 @@ import {
   type PurchaseAction,
   type PurchaseOrder,
   type PurchaseOrderStatus,
-  type PurchasePaymentStatus,
 } from "../types";
 
 const ACTION_ICONS: Record<PurchaseAction, typeof EyeIcon> = {
@@ -52,24 +55,16 @@ const ACTION_ICONS: Record<PurchaseAction, typeof EyeIcon> = {
   cancel_request: BanIcon,
   send_to_supplier: SendIcon,
   view_supplier_response: MessageSquareIcon,
-  receive: ArchiveRestoreIcon,
-  receive_remaining: ArchiveRestoreIcon,
+  receive: PackageIcon,
+  receive_remaining: PackageIcon,
   record_invoice: FileTextIcon,
-  return: Undo2Icon,
-  record_payment: WalletIcon,
+  return: RotateCcwIcon,
+  record_payment: CreditCardIcon,
   view_received: ArchiveRestoreIcon,
   view_payments: WalletIcon,
   view_returns: Undo2Icon,
-  cancel: BanIcon,
+  cancel: Trash2Icon,
 };
-
-const PAYMENT_VARIANTS: Record<PurchasePaymentStatus, "success" | "danger" | "warning" | "neutral"> =
-  {
-    paid: "success",
-    unpaid: "danger",
-    partially_paid: "warning",
-    refunded: "neutral",
-  };
 
 const STATUS_VARIANTS: Record<
   PurchaseOrderStatus,
@@ -96,15 +91,25 @@ interface Column {
 }
 
 const COLUMNS: Column[] = [
-  { id: "purchaseId", label: "Purchase ID", width: "w-[110px]", sortable: true },
+  {
+    id: "purchaseId",
+    label: "Purchase ID",
+    width: "w-[102px]",
+    sortable: true,
+  },
   { id: "supplierName", label: "Supplier", sortable: true },
-  { id: "items", label: "Items", width: "w-[80px]", sortable: true },
-  { id: "totalAmount", label: "Total Amount", width: "w-[130px]", sortable: true },
-  { id: "date", label: "Date", width: "w-[115px]", sortable: true },
-  { id: "fulfilled", label: "Fulfilled", width: "w-[90px]", sortable: true },
-  { id: "payment", label: "Payment", width: "w-[125px]" },
+  { id: "items", label: "Items", width: "w-[65px]", sortable: true },
+  {
+    id: "totalAmount",
+    label: "Total Amount",
+    width: "w-[150px]",
+    sortable: true,
+  },
+  { id: "date", label: "Date", width: "w-[140px]", sortable: true },
+  { id: "fulfilled", label: "Fulfilled", width: "w-[80px]", sortable: true },
+  { id: "payment", label: "Payment", width: "w-[116px]" },
   { id: "status", label: "Status", width: "w-[155px]" },
-  { id: "actions", label: "Actions", width: "w-[78px]", align: "center" },
+  { id: "actions", label: "Actions", width: "w-[81px]", align: "center" },
 ];
 
 interface PurchaseOrdersTableProps {
@@ -127,7 +132,7 @@ export function PurchaseOrdersTable({
   onAction,
 }: PurchaseOrdersTableProps) {
   return (
-    <Table className="min-w-[1060px]">
+    <Table className="purchase-orders-table min-w-[1060px]">
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {COLUMNS.map((column) => {
@@ -141,9 +146,16 @@ export function PurchaseOrdersTable({
             return (
               <TableHead
                 key={column.id}
-                className={cn(column.width, column.align === "center" && "text-center")}
+                className={cn(
+                  column.width,
+                  column.align === "center" && "text-center",
+                )}
                 aria-sort={
-                  isSorted ? (sortDirection === "desc" ? "descending" : "ascending") : undefined
+                  isSorted
+                    ? sortDirection === "desc"
+                      ? "descending"
+                      : "ascending"
+                    : undefined
                 }
               >
                 {column.sortable ? (
@@ -156,7 +168,9 @@ export function PurchaseOrdersTable({
                     <SortIcon
                       className={cn(
                         "size-3 transition-opacity",
-                        isSorted ? "opacity-100" : "opacity-0 group-hover/sort:opacity-60",
+                        isSorted
+                          ? "opacity-100"
+                          : "opacity-0 group-hover/sort:opacity-60",
                       )}
                     />
                   </button>
@@ -172,10 +186,13 @@ export function PurchaseOrdersTable({
       <TableBody>
         {loading
           ? Array.from({ length: pageSize }).map((_, index) => (
-              <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
+              <TableRow
+                key={`skeleton-${index}`}
+                className="hover:bg-transparent"
+              >
                 {COLUMNS.map((column) => (
                   <TableCell key={column.id} className={column.width}>
-                    <Skeleton className="h-4 w-full max-w-[110px]" />
+                    <Skeleton className="h-4 w-full max-w-[102px]" />
                   </TableCell>
                 ))}
               </TableRow>
@@ -186,31 +203,44 @@ export function PurchaseOrdersTable({
 
               return (
                 <TableRow key={order.id}>
-                  <TableCell className="w-[110px] font-medium whitespace-nowrap">
+                  <TableCell className="w-[102px] font-medium whitespace-nowrap">
                     {order.purchaseId}
                   </TableCell>
-                  <TableCell className="max-w-0 truncate" title={order.supplierName}>
+                  <TableCell
+                    className="max-w-0 truncate"
+                    title={order.supplierName}
+                  >
                     {order.supplierName}
                   </TableCell>
-                  <TableCell className="w-[80px]">{formatNumber(order.items)}</TableCell>
-                  <TableCell className="w-[130px] whitespace-nowrap">
+                  <TableCell className="w-[65px]">
+                    {formatNumber(order.items)}
+                  </TableCell>
+                  <TableCell className="w-[150px] whitespace-nowrap">
                     {formatCurrency(order.totalAmount)}
                   </TableCell>
-                  <TableCell className="w-[115px] whitespace-nowrap">
+                  <TableCell className="w-[140px] whitespace-nowrap">
                     {formatDate(order.date)}
                   </TableCell>
-                  <TableCell className="w-[90px]">{formatNumber(order.fulfilled)}</TableCell>
-                  <TableCell className="w-[125px]">
-                    <Badge variant={PAYMENT_VARIANTS[payment]} dot>
+                  <TableCell className="w-[80px]">
+                    {formatNumber(order.fulfilled)}
+                  </TableCell>
+                  <TableCell className="w-[116px]">
+                    <span
+                      className={`purchase-payment-status purchase-payment-${payment}`}
+                    >
                       {PURCHASE_PAYMENT_LABELS[payment]}
-                    </Badge>
+                    </span>
                   </TableCell>
                   <TableCell className="w-[155px]">
-                    <Badge variant={STATUS_VARIANTS[order.status]} dot>
+                    <Badge
+                      variant={STATUS_VARIANTS[order.status]}
+                      className={`purchase-order-status-${order.status}`}
+                      dot
+                    >
                       {PURCHASE_STATUS_LABELS[order.status]}
                     </Badge>
                   </TableCell>
-                  <TableCell className="w-[78px] text-center">
+                  <TableCell className="w-[81px] text-center">
                     <div className="flex justify-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger
@@ -219,14 +249,13 @@ export function PurchaseOrdersTable({
                         >
                           <MoreHorizontalIcon className="size-5" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent className="purchase-action-menu">
                           {actions.map((entry) => {
                             const Icon = ACTION_ICONS[entry.id];
                             return (
                               <DropdownMenuItem
                                 key={entry.id}
                                 disabled={entry.disabled}
-                                variant={entry.id === "cancel" ? "destructive" : "default"}
                                 onClick={() => onAction(entry.id, order)}
                               >
                                 <Icon />

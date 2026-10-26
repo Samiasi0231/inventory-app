@@ -55,7 +55,7 @@ export function StepBasicInfo() {
               event.preventDefault();
               handleFile(event.dataTransfer.files?.[0]);
             }}
-            className="relative flex h-[180px] items-center justify-center rounded-lg border border-dashed border-border"
+            className="relative flex h-[220px] items-center justify-center rounded-lg border border-dashed border-border"
           >
             {imageDataUrl ? (
               <>
@@ -148,6 +148,7 @@ export function StepBasicInfo() {
 
         <Field label="Description" htmlFor="description" required error={errors.description?.message}>
           <TextareaInput
+            className="min-h-[188px]"
             id="description"
             placeholder="Delicious chocolate with a smooth and rich taste."
             invalid={!!errors.description}
