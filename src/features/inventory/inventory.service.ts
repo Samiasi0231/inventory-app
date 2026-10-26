@@ -1,3 +1,5 @@
+import { buildProductDetailFixture } from "./product-detail-fixtures";
+import type { AddProductValues } from "./components/add-product/schema";
 import type { Brand, Category, ID, Paginated, Supplier, TaxScheme, Unit } from "@/types/shared";
 import {
   MOCK_BRANDS,
@@ -32,6 +34,19 @@ let records: InventoryRecord[] = MOCK_INVENTORY_RECORDS.map((record) => ({
   ...record,
   stockByBranch: { ...record.stockByBranch },
 }));
+
+// The design fixture represents the full catalog summary. Padded list rows are
+// for pagination only; changes to stock still update the displayed snapshot.
+const summarySnapshot = { stockValue: 650_400_000, potentialSalesValue: 840_600_000, itemsRequiringAttention: 12 };
+function catalogTotals(branchId: string) {
+  const items = records.filter(record => !record.archived).map(record => toItem(record, branchId));
+  return {
+    stockValue: items.reduce((sum, item) => sum + item.costPrice * item.totalStock, 0),
+    potentialSalesValue: items.reduce((sum, item) => sum + item.sellingPrice * item.totalStock, 0),
+    itemsRequiringAttention: items.filter(item => getStockStatus(item) !== "in_stock").length,
+  };
+}
+const initialTotals = catalogTotals(DEFAULT_BRANCH_ID);
 
 /** Flattens a catalog record to the branch-scoped row the UI renders. */
 function toItem(record: InventoryRecord, branchId: string): InventoryItem {
@@ -68,7 +83,32 @@ function sortItems(list: InventoryItem[], params: InventoryListParams) {
   });
 }
 
+const productDetails = new Map<string, AddProductValues>();
+
 export const inventoryService = {
+  getProductDetails(id: string, branchId = DEFAULT_BRANCH_ID) {
+    const saved = productDetails.get(`${id}:${branchId}`);
+    if (saved) return saved;
+    const seed = MOCK_INVENTORY_RECORDS.find(record => record.id === id);
+    return seed ? buildProductDetailFixture(seed, branchId) : undefined;
+  },
+
+  async saveProduct(id: string | undefined, values: AddProductValues, payload: CreateProductPayload) {
+    const stockByBranch: Record<string, number> = {};
+    for (const row of values.openingStock ?? []) {
+      stockByBranch[row.branchId] = (stockByBranch[row.branchId] ?? 0) + Number(row.quantity || 0);
+    }
+    if (!id) {
+      const result = await inventoryService.createProduct(payload);
+      productDetails.set(`${result.id}:${payload.branchId}`, structuredClone(values));
+      records = records.map(record => record.id === result.id ? { ...record, stockByBranch } : record);
+      return result;
+    }
+    await sleep(400);
+    productDetails.set(`${id}:${payload.branchId}`, structuredClone(values));
+    records = records.map(record => record.id === id ? { ...record, name: payload.name, categoryId: payload.categoryId, categoryName: MOCK_CATEGORIES.find(c => c.id === payload.categoryId)?.name ?? record.categoryName, costPrice: payload.defaultCostPrice, sellingPrice: payload.defaultSellingPrice, baseUnit: payload.baseUnit, reorderPoint: payload.reorderPoint, stockByBranch: { ...record.stockByBranch, ...stockByBranch } } : record);
+    return { id };
+  },
   async listItems(params: InventoryListParams = {}): Promise<Paginated<InventoryItem>> {
     await sleep(500);
 
@@ -115,13 +155,13 @@ export const inventoryService = {
     ).length;
 
     return {
-      stockValue,
+      stockValue: branchId === DEFAULT_BRANCH_ID ? summarySnapshot.stockValue + stockValue - initialTotals.stockValue : stockValue,
       stockValueDelta: 5.2,
-      potentialSalesValue,
+      potentialSalesValue: branchId === DEFAULT_BRANCH_ID ? summarySnapshot.potentialSalesValue + potentialSalesValue - initialTotals.potentialSalesValue : potentialSalesValue,
       potentialSalesValueDelta: 5.2,
-      profitToBeMade: potentialSalesValue - stockValue,
+      profitToBeMade: potentialSalesValue - stockValue + (branchId === DEFAULT_BRANCH_ID ? summarySnapshot.potentialSalesValue - summarySnapshot.stockValue - initialTotals.potentialSalesValue + initialTotals.stockValue : 0),
       profitToBeMadeDelta: 6.2,
-      itemsRequiringAttention,
+      itemsRequiringAttention: branchId === DEFAULT_BRANCH_ID ? Math.max(0, summarySnapshot.itemsRequiringAttention + itemsRequiringAttention - initialTotals.itemsRequiringAttention) : itemsRequiringAttention,
       itemsRequiringAttentionDelta: -5.2,
     };
   },

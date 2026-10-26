@@ -2,6 +2,9 @@ import type { ID, Paginated } from "@/types/shared";
 import { MOCK_CUSTOMERS } from "./mock-data";
 import {
   getOrderBalance,
+  getOrderPaymentStatus,
+  type OrderPayment,
+  type OrderReturn,
   type OrderStatus,
   type SalesOrder,
   type SalesOrderLine,
@@ -41,7 +44,7 @@ function buildLines(index: number, total: number, status: OrderStatus): SalesOrd
   const firstQty = 4;
   const secondQty = 10;
   const firstShare = Math.round((total * 0.7) / firstQty);
-  const secondShare = Math.round((total - firstShare * firstQty) / secondQty);
+  const secondShare = (total - firstShare * firstQty) / secondQty;
 
   const fullySent = status === "fulfilled" || status === "completed";
   const partly = status === "partially_received";
@@ -91,17 +94,28 @@ function buildOrder(index: number): SalesOrder {
     total,
     amountPaid,
     status,
-    branchId: index < 29 ? "br_ph" : BRANCH_IDS[index % BRANCH_IDS.length],
+    branchId: index < 29 ? "br_ph" : BRANCH_IDS[1 + index % 3],
+    deliveryMethod: "GIG delivery", deliveryCost: 0, discount: 0, vat: 0,
+    invoiceNumber: status === "completed" || status === "fulfilled" ? `INV-2026-${String(index + 1).padStart(4, "0")}` : undefined,
+    payments: amountPaid > 0 ? [{ id: `PAY-${String(index * 2 + 1).padStart(3, "0")}`, date: "2026-09-21T10:42:00Z", method: "Bank Transfer", reference: `TRF-123456789${index}`, amount: Math.round(amountPaid * 0.6), receivedBy: "Sales Staff" }, { id: `PAY-${String(index * 2 + 2).padStart(3, "0")}`, date: "2026-09-30T10:42:00Z", method: "Bank Transfer", reference: `TRF-123456790${index}`, amount: amountPaid - Math.round(amountPaid * 0.6), receivedBy: "Sales Staff" }] : [],
+    returns: status === "completed" || status === "fulfilled" ? [
+      { id: `RET-${String(index * 3 + 1).padStart(3, "0")}`, date: "2026-09-22T10:42:00Z", items: 2, reason: "Damaged Goods", amount: Math.round(total * 0.1), status: "Completed", recordedBy: "Sales Staff" },
+      { id: `RET-${String(index * 3 + 2).padStart(3, "0")}`, date: "2026-09-24T10:42:00Z", items: 1, reason: "Expired Products", amount: Math.round(total * 0.05), status: "Approved", recordedBy: "Sales Staff" },
+      { id: `RET-${String(index * 3 + 3).padStart(3, "0")}`, date: "2026-09-25T10:42:00Z", items: 1, reason: "Expired Products", amount: Math.round(total * 0.05), status: "Rejected", recordedBy: "Sales Staff" },
+    ] : [],
     lines: buildLines(index, total, status),
     sourcePurchaseId: index % 3 === 0 ? `PO-${String(124 - (index % 12)).padStart(5, "0")}` : undefined,
   };
 }
 
 let orders: SalesOrder[] = Array.from({ length: 96 }, (_, index) => buildOrder(index));
+let nextPayment = 193;
+let nextReturn = 289;
 
 function matchesFilters(order: SalesOrder, params: SalesOrderListParams) {
   if (params.branchId && order.branchId !== params.branchId) return false;
   if (params.status && params.status !== "all" && order.status !== params.status) return false;
+  if (params.payment && params.payment !== "all" && getOrderPaymentStatus(order) !== params.payment) return false;
   if (params.search) {
     const needle = params.search.trim().toLowerCase();
     if (!`${order.orderId} ${order.customerName}`.toLowerCase().includes(needle)) return false;
@@ -124,6 +138,43 @@ function sortOrders(list: SalesOrder[], params: SalesOrderListParams) {
 }
 
 export const ordersService = {
+  async acceptOrder(id: ID): Promise<void> {
+    await sleep(400);
+    orders = orders.map(order => order.id === id && order.status === "pending" ? { ...order, status: "confirmed" } : order);
+  },
+  async proposeChanges(id: ID, proposal: string, proposedPrice?: number): Promise<void> {
+    await sleep(400);
+    if (proposal.length > 500) throw new Error("Keep the note within 500 characters.");
+    if (proposedPrice !== undefined && (!Number.isFinite(proposedPrice) || proposedPrice <= 0)) throw new Error("Enter a new price greater than zero.");
+    if (proposedPrice === undefined && !proposal.trim()) throw new Error("Describe the proposed changes.");
+    if (!orders.some(order => order.id === id)) throw new Error("Order not found.");
+    orders = orders.map(order => order.id === id ? { ...order, proposal, proposedPrice } : order);
+  },
+  async rejectOrder(id: ID, note: string): Promise<void> {
+    await sleep(400);
+    if (note.length > 500) throw new Error("Keep the note within 500 characters.");
+    if (!orders.some(order => order.id === id)) throw new Error("Order not found.");
+    orders = orders.map(order => order.id === id ? { ...order, status: "cancelled", rejectionNote: note } : order);
+  },
+  async createInvoice(id: ID): Promise<void> {
+    await sleep(400);
+    orders = orders.map(order => order.id === id ? { ...order, invoiceNumber: order.invoiceNumber ?? `INV-${order.orderId}` } : order);
+  },
+  async recordPayment(id: ID, payment: Omit<OrderPayment, "id">): Promise<void> {
+    await sleep(400);
+    const order = orders.find(order => order.id === id);
+    if (!order || !Number.isFinite(payment.amount) || payment.amount <= 0 || payment.amount > getOrderBalance(order)) throw new Error("Enter an amount within the outstanding balance.");
+    orders = orders.map(order => order.id === id ? { ...order, amountPaid: order.amountPaid + payment.amount, payments: [...(order.payments ?? []), { ...payment, id: `PAY-${String(nextPayment++).padStart(3, "0")}` }] } : order);
+  },
+  async createReturn(id: ID, entry: Omit<OrderReturn, "id" | "status">): Promise<void> {
+    await sleep(400);
+    const order = orders.find(order => order.id === id);
+    const eligible = order?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? 0;
+    const returned = order?.returns?.filter(row => row.status !== "Rejected").reduce((sum, row) => sum + row.items, 0) ?? 0;
+    if (!order || !Number.isInteger(entry.items) || entry.items < 1 || entry.items > eligible - returned || !Number.isFinite(entry.amount) || entry.amount < 0 || entry.amount > order.total) throw new Error("Check the return quantity and amount.");
+    orders = orders.map(order => order.id === id ? { ...order, returns: [...(order.returns ?? []), { ...entry, id: `RET-${String(nextReturn++).padStart(3, "0")}`, status: "Approved" }] } : order);
+  },
+
   async listOrders(params: SalesOrderListParams = {}): Promise<Paginated<SalesOrder>> {
     await sleep(500);
 
@@ -180,7 +231,7 @@ export const ordersService = {
   async markGoodsSent(id: ID): Promise<void> {
     await sleep(700);
     orders = orders.map((order) =>
-      order.id === id ? { ...order, status: "fulfilled" as OrderStatus } : order,
+      order.id === id ? { ...order, status: "fulfilled" as OrderStatus, lines: order.lines.map(line => ({ ...line, sent: line.quantity })) } : order,
     );
   },
 };

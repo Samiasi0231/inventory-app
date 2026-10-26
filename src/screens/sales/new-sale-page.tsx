@@ -2,17 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PlusIcon, SearchIcon } from "lucide-react";
+import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { PrimaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { useBranch } from "@/context/branch-context";
 import { TopbarAction } from "@/layout/app-topbar";
@@ -22,6 +15,7 @@ import { CartPanel } from "@/features/sales/components/cart-panel";
 import { ReceiptDialog } from "@/features/sales/components/receipt-dialog";
 import type { Receipt } from "@/features/sales/receipts.service";
 import { ProductCard } from "@/features/sales/components/product-card";
+import { ProductConfiguration } from "@/features/sales/components/product-configuration";
 import { SALE_CATEGORIES } from "@/features/sales/mock-data";
 import { salesService } from "@/features/sales/sales.service";
 import {
@@ -40,8 +34,10 @@ export default function NewSalePage() {
   const { products, customers, loading } = useSaleCatalog(activeBranch.id);
 
   const [customerId, setCustomerId] = useState<string>("");
+  const [customerOpen, setCustomerOpen] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("all");
+  const [selectedProduct, setSelectedProduct] = useState<SellableProduct | null>(null);
 
   const [lines, setLines] = useState<CartLine[]>([]);
   const [discountMode, setDiscountMode] = useState<DiscountMode>("amount");
@@ -62,15 +58,18 @@ export default function NewSalePage() {
     });
   }, [products, search, categoryId]);
 
-  const totals = calculateCartTotals(lines, discountMode, discountValue);
+  const totals = calculateCartTotals(lines, discountMode, discountValue, 0);
   const paid = payments.reduce((sum, payment) => sum + payment.amount, 0);
 
   function addProduct(product: SellableProduct) {
+    setSelectedProduct(product.options ? product : null);
     setLines((current) => {
       const existing = current.find((line) => line.productId === product.id);
       if (existing) {
         return current.map((line) =>
-          line.productId === product.id ? { ...line, quantity: line.quantity + 1 } : line,
+          line.productId === product.id
+            ? { ...line, quantity: Math.min(line.quantity + 1, product.stock ?? Number.POSITIVE_INFINITY) }
+            : line,
         );
       }
       return [
@@ -87,14 +86,34 @@ export default function NewSalePage() {
     });
   }
 
+  function addConfiguredProduct(
+    product: SellableProduct,
+    selection: { quantity: number; unit: string; price: number },
+  ) {
+    setLines((current) => {
+      const existing = current.find((line) => line.productId === product.id);
+      if (existing) {
+        return current.map((line) =>
+          line.productId === product.id
+            ? { ...line, unit: selection.unit.toLowerCase(), unitPrice: selection.price, quantity: existing.quantity + selection.quantity }
+            : line,
+        );
+      }
+      return [...current, { productId: product.id, name: product.name, sku: product.sku, unit: selection.unit.toLowerCase(), unitPrice: selection.price, quantity: selection.quantity }];
+    });
+  }
+
   function changeQuantity(productId: string, quantity: number) {
     if (quantity <= 0) {
       setLines((current) => current.filter((line) => line.productId !== productId));
       return;
     }
-    setLines((current) =>
-      current.map((line) => (line.productId === productId ? { ...line, quantity } : line)),
-    );
+    setLines((current) => current.map((line) => {
+      if (line.productId !== productId) return line;
+      const product = products.find((entry) => entry.id === productId);
+      const maximum = product?.stock ?? Number.POSITIVE_INFINITY;
+      return { ...line, quantity: Math.min(quantity, maximum) };
+    }));
   }
 
   function resetSale() {
@@ -103,20 +122,21 @@ export default function NewSalePage() {
     setDiscountValue(0);
     setPaymentAmount("");
     setCustomerId("");
+    setSelectedProduct(null);
   }
 
   function addPayment() {
     const amount = Number(paymentAmount);
-    if (!amount || amount <= 0) return;
+    const outstanding = Math.max(0, totals.total - paid);
+    if (!amount || amount <= 0 || amount > outstanding) return;
     setPayments((current) => [...current, { method: paymentMethod, amount }]);
-    setPaymentAmount("");
   }
 
   function payRemaining() {
     const outstanding = Math.max(0, totals.total - paid);
     if (outstanding <= 0) return;
     setPayments((current) => [...current, { method: paymentMethod, amount: outstanding }]);
-    setPaymentAmount("");
+    setPaymentAmount(String(outstanding));
   }
 
   async function confirmSale() {
@@ -130,6 +150,7 @@ export default function NewSalePage() {
         discountMode,
         discountValue,
         payments,
+        vatRate: 0,
       });
 
       const invoice = await salesService.getInvoice(result.invoiceId);
@@ -172,7 +193,7 @@ export default function NewSalePage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6 2xl:ml-2">
       <TopbarAction>
         <PrimaryButton
           onClick={() => document.getElementById("sale-search")?.focus()}
@@ -186,41 +207,52 @@ export default function NewSalePage() {
 
       <header className="px-0.5">
         <h1 className="text-xl font-semibold text-ink-1">New sale</h1>
-        <p className="mt-1 text-base text-ink-1">
+        <p className="mt-0.5 text-base text-ink-1">
           Pick items, take payment, and confirm. The invoice and receipt are created together.
         </p>
       </header>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
-        <section className="flex min-w-0 flex-col gap-4 rounded-xl bg-surface p-5">
-          <div className="flex min-w-0 flex-col gap-1.5">
-              <label htmlFor="customer" className="text-sm text-ink-2">
+      <div className="-mt-[3px] grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_430px] 2xl:w-[1233px] 2xl:grid-cols-[763px_430px] 2xl:gap-10">
+        <section className="flex min-w-0 flex-col gap-3 overflow-visible rounded-xl bg-surface px-5 pt-[18px] pb-5">
+          <div className="flex min-w-0 flex-col gap-1">
+              <label htmlFor="customer" className="text-sm font-semibold text-ink-2">
                 Customer
               </label>
-              <Select
-                value={customerId}
-                onValueChange={(value) => setCustomerId(value ?? "")}
-              >
-                <SelectTrigger id="customer" className="w-full">
-                  <SelectValue>{customerId ? customers.find((customer) => customer.id === customerId)?.name : "Walk-in customer"}</SelectValue>
-                </SelectTrigger>
-                <SelectContent
-                  align="start"
-                  sideOffset={0}
-                  className="p-0 [&_[data-slot=select-item]]:rounded-none [&_[data-slot=select-item]]:border-b [&_[data-slot=select-item]]:border-border/50 [&_[data-slot=select-item]:last-child]:border-b-0"
+              <div className="overflow-hidden rounded-lg border border-border bg-white">
+                <button
+                  id="customer"
+                  type="button"
+                  aria-expanded={customerOpen}
+                  aria-controls="sale-customer-options"
+                  onClick={() => setCustomerOpen((open) => !open)}
+                  className="flex h-11 w-full items-center justify-between px-4 text-left text-base text-ink-3"
                 >
-                  <SelectItem value="">Walk-in customer</SelectItem>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  <span>{customerId ? customers.find((customer) => customer.id === customerId)?.name : "Walk-in customer"}</span>
+                  <ChevronDownIcon className={`size-5 transition-transform ${customerOpen ? "rotate-180" : ""}`} />
+                </button>
+                {customerOpen && (
+                  <div id="sale-customer-options" role="listbox" aria-label="Customers">
+                    {customers.map((customer) => (
+                      <button
+                        key={customer.id}
+                        type="button"
+                        role="option"
+                        aria-selected={customerId === customer.id}
+                        onClick={() => {
+                          setCustomerId(customer.id);
+                          setCustomerOpen(false);
+                        }}
+                        className="flex h-11 w-full items-center border-t border-[#dedede] px-4 text-left text-base text-ink-2 transition-colors hover:bg-surface-muted"
+                      >
+                        {customer.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
           </div>
 
-          <div className="flex h-[42px] items-center gap-2 rounded-lg border border-border px-4">
-            <SearchIcon className="size-5 shrink-0 text-ink-4" />
+          <div className="flex h-[50px] items-center gap-2 rounded-lg border border-border px-4">
             <input
               id="sale-search"
               type="search"
@@ -228,7 +260,7 @@ export default function NewSalePage() {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search by name, or type or scan a SKU and press Enter"
               aria-label="Search products"
-              className="min-w-0 flex-1 bg-transparent text-sm text-ink-1 outline-none placeholder:text-ink-4"
+              className="min-w-0 flex-1 bg-transparent text-base text-ink-1 outline-none placeholder:text-ink-4"
             />
           </div>
 
@@ -252,7 +284,7 @@ export default function NewSalePage() {
           </div>
 
           {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {Array.from({ length: 9 }).map((_, index) => (
                 <Skeleton key={index} className="h-[132px] rounded-xl" />
               ))}
@@ -269,6 +301,14 @@ export default function NewSalePage() {
                 <ProductCard key={product.id} product={product} onSelect={addProduct} />
               ))}
             </div>
+          )}
+
+          {selectedProduct?.options && (
+            <ProductConfiguration
+              key={selectedProduct.id}
+              product={selectedProduct}
+              onAdd={(selection) => addConfiguredProduct(selectedProduct, selection)}
+            />
           )}
         </section>
 
