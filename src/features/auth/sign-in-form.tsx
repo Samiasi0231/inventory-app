@@ -33,7 +33,7 @@ export function SignInForm() {
       const { email } = await authApi.signIn(values);
       setEmail(email);
       
-      router.push("/inventory");
+      router.push("/dashboard");
     } catch {
       setError("password", { type: "server", message: "Wrong password" });
     }
