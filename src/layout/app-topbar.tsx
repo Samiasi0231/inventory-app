@@ -61,23 +61,45 @@ export function TopbarBreadcrumb({
 }
 
 /** The parent section plus the current page, e.g. "Inventory / Products". */
+
 function useBreadcrumb() {
   const pathname = usePathname();
-  if (pathname.startsWith("/sales/")) return { section: null, page: "Sales" };
+
   const reportTitle = pathname.startsWith("/reports/")
     ? REPORT_TITLES[pathname.split("/")[2]]
     : undefined;
-  if (reportTitle) return { section: "Reports", page: reportTitle };
 
+  if (reportTitle) {
+    return { section: "Reports", page: reportTitle };
+  }
+
+  // Match child routes first, including nested Transactions pages.
   for (const item of NAV_ITEMS) {
-    const child = item.children?.find((entry) => pathname.startsWith(entry.href));
-    if (child) return { section: item.label, page: child.label };
-    if (item.href && pathname.startsWith(item.href)) {
+    const child = item.children?.find(
+      (entry) =>
+        pathname === entry.href ||
+        pathname.startsWith(`${entry.href}/`),
+    );
+
+    if (child) {
+      return { section: item.label, page: child.label };
+    }
+  }
+
+  // Handle parent routes after checking child routes.
+  for (const item of NAV_ITEMS) {
+    if (
+      item.href &&
+      (pathname === item.href ||
+        pathname.startsWith(`${item.href}/`))
+    ) {
       return { section: null, page: item.label };
     }
   }
+
   return { section: null, page: "Dashboard" };
 }
+
 
 interface AppTopbarProps {
   onOpenSidebar: () => void;

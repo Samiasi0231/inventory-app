@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -69,7 +70,7 @@ interface Props {
   customer?: Customer | null;
   onClose: () => void;
   onSubmit: (input: CustomerInput) => Promise<void>;
-  /** The edit design reuses the staff button text ("Send Invitation") — we default to "Save Changes". */
+  /** Button label when editing an existing customer. */
   editSubmitLabel?: string;
 }
 
@@ -95,12 +96,16 @@ export function CustomerFormModal({
   });
 
   useEffect(() => {
-    if (open) reset(customer ? fromCustomer(customer) : EMPTY);
+    if (open) {
+      reset(customer ? fromCustomer(customer) : EMPTY);
+    }
   }, [open, customer, reset]);
 
   const submit = handleSubmit(async (v) => {
     const limit = Number(v.creditLimit);
+
     setSubmitting(true);
+
     try {
       await onSubmit({
         name: v.name,
@@ -109,9 +114,11 @@ export function CustomerFormModal({
         phone: v.phone,
         email: v.email,
         address: v.address,
-        creditLimit: v.creditLimit === "" || limit === 0 ? null : limit, // empty / 0 = no limit
+        creditLimit:
+          v.creditLimit === "" || limit === 0 ? null : limit,
         notes: v.notes,
       });
+
       onClose();
     } finally {
       setSubmitting(false);
@@ -119,15 +126,16 @@ export function CustomerFormModal({
   });
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      locked={submitting}
-      className="max-w-[600px]"
-    >
+   <Modal
+  open={open}
+  onClose={onClose}
+  locked={submitting}
+  className="my-auto max-h-[85dvh] w-full max-w-[600px] overflow-y-auto overscroll-contain"
+>
       <h2 className="text-xl font-semibold text-gray-900">
         {isEdit ? "Edit Details" : "Add Customer"}
       </h2>
+
       <p className="mt-1 text-xs text-gray-500">
         {isEdit
           ? "Fill in the details to edit"
@@ -162,6 +170,7 @@ export function CustomerFormModal({
             />
           )}
         />
+
         <FormInput
           label="Contact Person"
           placeholder="e.g Mr Salami"
@@ -176,6 +185,7 @@ export function CustomerFormModal({
           error={errors.phone?.message}
           {...register("phone")}
         />
+
         <FormInput
           label="Email Address"
           type="email"
@@ -191,6 +201,7 @@ export function CustomerFormModal({
           error={errors.address?.message}
           {...register("address")}
         />
+
         <FormInput
           fieldClassName="sm:col-span-2"
           label="Credit Limit"
@@ -200,6 +211,7 @@ export function CustomerFormModal({
           error={errors.creditLimit?.message}
           {...register("creditLimit")}
         />
+
         <FormTextarea
           fieldClassName="sm:col-span-2"
           label="Notes (Optional)"
@@ -208,7 +220,7 @@ export function CustomerFormModal({
           {...register("notes")}
         />
 
-        <div className="flex justify-between pt-2 sm:col-span-2">
+        <div className="flex justify-between gap-3 pt-2 sm:col-span-2">
           <SecondaryButton
             type="button"
             onClick={onClose}
@@ -216,6 +228,7 @@ export function CustomerFormModal({
           >
             Cancel
           </SecondaryButton>
+
           <PrimaryButton type="submit" disabled={submitting}>
             {submitting
               ? "Please wait..."
