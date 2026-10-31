@@ -1,24 +1,17 @@
 "use client";
-
 import { useMemo, useState } from "react";
 import {
-  ChevronDownIcon,
   DownloadIcon,
   HistoryIcon,
-  ListFilterIcon,
   PlusIcon,
   SearchIcon,
   TriangleAlertIcon,
 } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
+import { FilterMenu, type FilterOption } from "@/components/common/filter-menu";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -95,13 +88,12 @@ function formatQuantity(movement: StockMovement) {
   return `${sign}${formatNumber(Math.abs(movement.quantity))}`;
 }
 
-const TYPE_OPTIONS: (StockMovementType | "all")[] = [
-  "all",
-  "purchase",
-  "sale",
-  "refund",
-  "adjustment",
-];
+type TypeFilter = StockMovementType | "all";
+
+// No "All types" entry: the Filter menu leaves the default out and offers "Clear filter".
+const TYPE_FILTER_OPTIONS: FilterOption<TypeFilter>[] = (
+  ["purchase", "sale", "refund", "adjustment"] as const
+).map((value) => ({ value, label: STOCK_MOVEMENT_LABELS[value] }));
 
 export default function StockHistoryPage() {
   const { activeBranch } = useBranch();
@@ -109,9 +101,7 @@ export default function StockHistoryPage() {
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 350);
-  const [type, setType] = useState<StockMovementType | "all">("all");
-  const [draftType, setDraftType] = useState<StockMovementType | "all">("all");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [type, setType] = useState<TypeFilter>("all");
   const [page, setPage] = useState(1);
 
   const params = useMemo(
@@ -185,78 +175,15 @@ export default function StockHistoryPage() {
           </div>
 
           <div className="self-start sm:self-auto">
-            <Popover
-              open={filterOpen}
-              onOpenChange={(next) => {
-                if (next) setDraftType(type);
-                setFilterOpen(next);
+            <FilterMenu
+              value={type}
+              options={TYPE_FILTER_OPTIONS}
+              onChange={(next) => {
+                setType(next);
+                setPage(1);
               }}
-            >
-              <PopoverTrigger className="flex h-8 items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-bold tracking-[0.14px] text-primary transition-colors hover:bg-surface-muted">
-                <ListFilterIcon className="size-4" />
-                Filter
-                {type !== "all" && (
-                  <span className="flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                    1
-                  </span>
-                )}
-                <ChevronDownIcon className="size-4" />
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-[260px] p-4">
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label
-                      htmlFor="movement-type"
-                      className="text-xs font-medium text-ink-2"
-                    >
-                      Type
-                    </label>
-                    <select
-                      id="movement-type"
-                      value={draftType}
-                      onChange={(event) =>
-                        setDraftType(
-                          event.target.value as StockMovementType | "all",
-                        )
-                      }
-                      className="h-9 w-full rounded-md border border-border bg-surface px-2 text-sm text-ink-1 outline-none focus-visible:border-primary"
-                    >
-                      {TYPE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option === "all"
-                            ? "All types"
-                            : STOCK_MOVEMENT_LABELS[option]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <SecondaryButton
-                      fullWidth
-                      className="h-9"
-                      onClick={() => {
-                        setType("all");
-                        setPage(1);
-                        setFilterOpen(false);
-                      }}
-                    >
-                      Clear
-                    </SecondaryButton>
-                    <PrimaryButton
-                      fullWidth
-                      className="h-9"
-                      onClick={() => {
-                        setType(draftType);
-                        setPage(1);
-                        setFilterOpen(false);
-                      }}
-                    >
-                      Apply
-                    </PrimaryButton>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+              defaultValue="all"
+            />
           </div>
         </div>
 

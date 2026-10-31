@@ -85,7 +85,8 @@ export const features: Feature[] = [
 ];
 
 // -----------------------------------------------------------------------------
-// Sample data shown inside the feature illustrations (decorative only)
+// Sample data shown inside the feature illustrations (decorative only).
+// Matches the design: change the copy here, the layout lives in feature-illustrations.tsx.
 // -----------------------------------------------------------------------------
 export const purchaseOrderPreview = {
   formFields: [
@@ -97,10 +98,12 @@ export const purchaseOrderPreview = {
     "Delivery Method",
     "Notes",
   ],
-  columns: ["Product", "Variant", "Unit", "Quantity", "Unit cost(₦)", "Total(₦)"],
+  /** Fields that show a value in the design; the rest stay empty. */
+  formValues: { "Order Date": "04 Oct 2026", "Created By": "Inventory Manager" } as Record<string, string>,
+  columns: ["Product", "Variant", "Unit", "Quantity", "Unit cost (₦)", "Total (₦)"],
   rows: [
-    ["Bernard Rice (50kg)", "Local", "Bag", "10", "108,000", "1,080,000"],
-    ["Premium Oil (25L)", "Vegetable", "Drum", "4", "62,500", "250,000"],
+    ["Premium Chin Chin", "Large / Milk", "Carton", "4", "108,000", "432,000"],
+    ["Premium Chin Chin", "Original", "Carton", "10", "8,500", "85,000"],
   ] as string[][],
 };
 
@@ -113,35 +116,37 @@ export interface InventoryRow {
 }
 
 export const inventoryPreview: { columns: string[]; rows: InventoryRow[] } = {
-  columns: ["Batch Code", "Product Name", "Category", "Total Stock", "Status"],
+  columns: ["Item Code", "Product Name", "Category", "Total Stock", "Status"],
   rows: [
-    { code: ">001", product: "Pet Cola", category: "Food and Beverages", stock: 250, status: "low" },
-    { code: ">002", product: "Premium Rice (50kg)", category: "Food and Beverages", stock: 180, status: "in-stock" },
-    { code: ">003", product: "Agbeola Palm Oil (10L)", category: "Food and Beverages", stock: 400, status: "in-stock" },
+    { code: "I-001", product: "Pet Coke", category: "Food and Beverages", stock: 200, status: "low" },
+    { code: "I-002", product: "Premium Rice (50kg)", category: "Food and Beverages", stock: 300, status: "in-stock" },
+    { code: "I-003", product: "Ayoola Palm Oil (10L)", category: "Food and Beverages", stock: 400, status: "in-stock" },
   ],
 };
 
 export const grossProfitPreview = {
   tabs: ["Daily", "Weekly", "Monthly"],
   activeTab: "Monthly",
-  yLabels: ["100,000", "80,000", "60,000", "40,000", "20,000", "0"],
-  xLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-  /** Points as a percentage of the chart height (0–100). */
-  values: [22, 34, 30, 48, 44, 74],
+  yLabels: ["320,000", "280,000", "240,000", "200,000", "160,000"],
+  xLabels: ["Oct 1", "Oct 3", "Oct 5", "Oct 7", "Oct 9", "Oct 11"],
+  /** Points as a percentage of the chart height (0–100), one per x label. */
+  values: [6, 24, 48, 70, 46, 82],
 };
 
 export const branchPreview = [
   { name: "Lekki Branch", area: "Lekki, Lagos", active: true },
   { name: "Ikeja Branch", area: "Ikeja, Lagos", active: false },
-  { name: "Abuja Branch", area: "Wuse 2, Abuja", active: false },
+  { name: "Abuja Branch", area: "Garki, Abuja", active: false },
   { name: "Port Harcourt Branch", area: "GRA, Port Harcourt", active: false },
 ];
 
 export const branchDetails = [
-  { label: "Manager", value: "Chidi Okafor" },
-  { label: "Phone", value: "+234 801 234 5678" },
-  { label: "Email", value: "lekki@riinox.com" },
-  { label: "Address", value: "12 Admiralty Way" },
+  { label: "Code", value: "Main" },
+  { label: "Phone Number", value: "+234 801 234 5678" },
+  { label: "Business Email", value: "info@lagoswholesale.com" },
+  { label: "Address", value: "12 Broad Street" },
+  { label: "City", value: "Ikeja" },
+  { label: "Region", value: "Lagos" },
 ];
 
 // -----------------------------------------------------------------------------

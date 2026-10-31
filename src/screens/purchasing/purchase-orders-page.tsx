@@ -1,5 +1,4 @@
 "use client";
-
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -7,7 +6,6 @@ import {
   ChevronDownIcon,
   ClockIcon,
   DownloadIcon,
-  FilterIcon,
   PlusIcon,
   SearchIcon,
   ShoppingCartIcon,
@@ -17,6 +15,7 @@ import {
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
 import { FormDialog } from "@/components/common/form-dialog";
+import { FilterMenu } from "@/components/common/filter-menu"; 
 import { StatCard, StatCardSkeleton } from "@/components/common/stat-card";
 import { Pagination } from "@/components/ui/pagination";
 import {
@@ -295,54 +294,22 @@ export default function PurchaseOrdersPage() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2 self-start sm:self-auto">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex h-8 items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-bold tracking-[0.14px] text-ink-2 transition-colors hover:bg-surface-muted">
-                {activeScope.label}
-                <ChevronDownIcon className="size-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {SCOPES.map((scope) => (
-                  <DropdownMenuItem
-                    key={scope.value}
-                    onClick={() => {
-                      setStatus(scope.value);
-                      setPage(1);
-                    }}
-                  >
-                    <span
-                      className={cn(
-                        "size-1.5 rounded-full",
-                        status === scope.value
-                          ? "bg-primary"
-                          : "bg-transparent",
-                      )}
-                    />
-                    {scope.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex h-8 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-primary">
-                <FilterIcon size={16} strokeWidth={1.5} />
-                Filter
-                <ChevronDownIcon size={16} strokeWidth={1.5} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {SCOPES.map((scope) => (
-                  <DropdownMenuItem
-                    key={scope.value}
-                    onClick={() => {
-                      setStatus(scope.value);
-                      setPage(1);
-                    }}
-                  >
-                    {scope.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <FilterMenu
+              groups={[
+                {
+                  id: "status",
+                  label: "Status",
+                  value: status,
+                  options: SCOPES,
+                  defaultValue: "all",
+                  defaultLabel: "All statuses",
+                  onChange: (next) => {
+                    setStatus(next as PurchaseOrderStatus | "all");
+                    setPage(1);
+                  },
+                },
+              ]}
+            />
           </div>
         </div>
 

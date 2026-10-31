@@ -1,5 +1,4 @@
 "use client";
-
 import { useMemo, useState } from "react";
 import {
   DownloadIcon,
@@ -258,7 +257,7 @@ export default function InventoryProductsPage({
                     setPage(1);
                   }}
                 >
-                  Clear filters
+                  Clear filters 
                 </SecondaryButton>
               ) : (
                 <PrimaryButton
