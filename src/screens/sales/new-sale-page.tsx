@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { PrimaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
@@ -12,8 +11,8 @@ import { TopbarAction } from "@/layout/app-topbar";
 import { cn } from "@/lib/utils";
 import { PackageIcon } from "lucide-react";
 import { CartPanel } from "@/features/sales/components/cart-panel";
-import { ReceiptDialog } from "@/features/sales/components/receipt-dialog";
-import type { Receipt } from "@/features/sales/receipts.service";
+import { InvoicePreviewDialog } from "@/features/sales/components/invoice-preview-dialog";
+import type { Invoice } from "@/features/sales/types";
 import { ProductCard } from "@/features/sales/components/product-card";
 import { ProductConfiguration } from "@/features/sales/components/product-configuration";
 import { SALE_CATEGORIES } from "@/features/sales/mock-data";
@@ -28,7 +27,6 @@ import {
 import { useSaleCatalog } from "@/features/sales/use-sales";
 
 export default function NewSalePage() {
-  const router = useRouter();
   const { activeBranch } = useBranch();
   const toast = useToast();
   const { products, customers, loading } = useSaleCatalog(activeBranch.id);
@@ -38,6 +36,7 @@ export default function NewSalePage() {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("all");
   const [selectedProduct, setSelectedProduct] = useState<SellableProduct | null>(null);
+  const [editingLine, setEditingLine] = useState<CartLine | null>(null);
 
   const [lines, setLines] = useState<CartLine[]>([]);
   const [discountMode, setDiscountMode] = useState<DiscountMode>("amount");
@@ -47,7 +46,7 @@ export default function NewSalePage() {
   const [paymentMethod, setPaymentMethod] = useState<SalePayment["method"]>("cash");
 
   const [submitting, setSubmitting] = useState(false);
-  const [completed, setCompleted] = useState<Receipt | null>(null);
+  const [completed, setCompleted] = useState<Invoice | null>(null);
 
   const visibleProducts = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -62,61 +61,43 @@ export default function NewSalePage() {
   const paid = payments.reduce((sum, payment) => sum + payment.amount, 0);
 
   function addProduct(product: SellableProduct) {
-    setSelectedProduct(product.options ? product : null);
-    setLines((current) => {
-      const existing = current.find((line) => line.productId === product.id);
-      if (existing) {
-        return current.map((line) =>
-          line.productId === product.id
-            ? { ...line, quantity: Math.min(line.quantity + 1, product.stock ?? Number.POSITIVE_INFINITY) }
-            : line,
-        );
-      }
-      return [
-        ...current,
-        {
-          productId: product.id,
-          name: product.name,
-          sku: product.sku,
-          unit: product.unit,
-          unitPrice: product.price,
-          quantity: 1,
-        },
-      ];
-    });
+    setEditingLine(null);
+    setSelectedProduct(product);
   }
 
   function addConfiguredProduct(
     product: SellableProduct,
-    selection: { quantity: number; unit: string; price: number },
+    selection: { quantity: number; unit: string; price: number; size: string; type: string; maximum: number },
   ) {
-    setLines((current) => {
-      const existing = current.find((line) => line.productId === product.id);
-      if (existing) {
-        return current.map((line) =>
-          line.productId === product.id
-            ? { ...line, unit: selection.unit.toLowerCase(), unitPrice: selection.price, quantity: existing.quantity + selection.quantity }
-            : line,
-        );
-      }
-      return [...current, { productId: product.id, name: product.name, sku: product.sku, unit: selection.unit.toLowerCase(), unitPrice: selection.price, quantity: selection.quantity }];
+    const lineId = [product.id, selection.size, selection.type, selection.unit].join(":");
+    setLines((previous) => {
+      const current = editingLine ? previous.filter((line) => line.lineId !== editingLine.lineId) : previous;
+      const existing = current.find((line) => line.lineId === lineId);
+      if (existing) return current.map((line) => line.lineId === lineId
+        ? { ...line, quantity: Math.min(selection.maximum, line.quantity + selection.quantity) } : line);
+      return [...current, { lineId, productId: product.id, name: [product.name, selection.size, selection.type].filter(Boolean).join(" · "), sku: product.sku,
+        size: selection.size, variant: selection.type, maximum: selection.maximum,
+        unit: selection.unit.toLowerCase(), unitPrice: selection.price, quantity: selection.quantity }];
     });
+    setSelectedProduct(null);
+    setEditingLine(null);
   }
 
   function changeQuantity(productId: string, quantity: number) {
     if (quantity <= 0) {
-      setLines((current) => current.filter((line) => line.productId !== productId));
+      setLines((current) => current.filter((line) => (line.lineId ?? line.productId) !== productId));
       return;
     }
     setLines((current) => current.map((line) => {
-      if (line.productId !== productId) return line;
-      const product = products.find((entry) => entry.id === productId);
-      const maximum = product?.stock ?? Number.POSITIVE_INFINITY;
+      if ((line.lineId ?? line.productId) !== productId) return line;
+      const product = products.find((entry) => entry.id === line.productId);
+      const maximum = line.maximum ?? product?.stock ?? Number.POSITIVE_INFINITY;
       return { ...line, quantity: Math.min(quantity, maximum) };
     }));
   }
 
   function resetSale() {
+    setEditingLine(null);
     setLines([]);
     setPayments([]);
     setDiscountValue(0);
@@ -130,6 +111,7 @@ export default function NewSalePage() {
     const outstanding = Math.max(0, totals.total - paid);
     if (!amount || amount <= 0 || amount > outstanding) return;
     setPayments((current) => [...current, { method: paymentMethod, amount }]);
+    setPaymentAmount("");
   }
 
   function payRemaining() {
@@ -140,7 +122,15 @@ export default function NewSalePage() {
   }
 
   async function confirmSale() {
-    if (lines.length === 0) return;
+    if (lines.length === 0 || submitting) return;
+    if (paid > totals.total + 0.01) {
+      toast.add({ type: "error", title: "Update payments", description: "Payments exceed the total. Remove a payment before confirming." });
+      return;
+    }
+    if (!customerId && paid + 0.01 < totals.total) {
+      toast.add({ type: "error", title: "Payment required", description: "Pay in full or choose a customer to sell on credit." });
+      return;
+    }
     setSubmitting(true);
     try {
       const result = await salesService.createSale({
@@ -155,24 +145,7 @@ export default function NewSalePage() {
 
       const invoice = await salesService.getInvoice(result.invoiceId);
       if (invoice) {
-        const primaryMethod = payments[0]?.method ?? "credit";
-        setCompleted({
-          id: `receipt_${result.invoiceId}`,
-          number: result.receiptNumber,
-          issuedAt: invoice.issueDate,
-          invoiceNumber: invoice.number,
-          customerName: invoice.customerName,
-          method: primaryMethod,
-          receivedBy: "Amaka Obi",
-          amount: invoice.amountPaid,
-          invoiceTotal: invoice.total,
-          lines: invoice.lines.map((line) => ({
-            description: `${line.quantity} × ${line.name}`,
-            quantity: line.quantity,
-            amount: line.amount,
-          })),
-          branchId: invoice.branchId,
-        });
+        setCompleted(invoice);
       }
 
       toast.add({
@@ -180,7 +153,6 @@ export default function NewSalePage() {
         title: "Sale confirmed",
         description: `${result.invoiceNumber} · receipt ${result.receiptNumber}`,
       });
-      resetSale();
     } catch {
       toast.add({
         type: "error",
@@ -193,7 +165,7 @@ export default function NewSalePage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-6 2xl:ml-2">
+    <div className="sale-workspace flex min-w-0 flex-col gap-6 2xl:ml-2">
       <TopbarAction>
         <PrimaryButton
           onClick={() => document.getElementById("sale-search")?.focus()}
@@ -206,26 +178,26 @@ export default function NewSalePage() {
       </TopbarAction>
 
       <header className="px-0.5">
-        <h1 className="text-xl font-semibold text-ink-1">New sale</h1>
+        <h1 className="text-[28px] leading-9 font-semibold text-ink-1">New sale</h1>
         <p className="mt-0.5 text-base text-ink-1">
           Pick items, take payment, and confirm. The invoice and receipt are created together.
         </p>
       </header>
 
-      <div className="-mt-[3px] grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_430px] 2xl:w-[1233px] 2xl:grid-cols-[763px_430px] 2xl:gap-10">
-        <section className="flex min-w-0 flex-col gap-3 overflow-visible rounded-xl bg-surface px-5 pt-[18px] pb-5">
+      <div className="sale-columns -mt-[3px] grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_430px] 2xl:max-w-[1233px] 2xl:grid-cols-[763px_430px] 2xl:gap-10">
+        <section className="sale-catalog flex min-w-0 flex-col gap-[11px] overflow-visible rounded-xl bg-surface px-5 pt-[18px] pb-10 xl:min-h-[1424px]">
           <div className="flex min-w-0 flex-col gap-1">
               <label htmlFor="customer" className="text-sm font-semibold text-ink-2">
                 Customer
               </label>
-              <div className="overflow-hidden rounded-lg border border-border bg-white">
+              <div className="overflow-hidden rounded-xl border border-[#ededed] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]">
                 <button
                   id="customer"
                   type="button"
                   aria-expanded={customerOpen}
                   aria-controls="sale-customer-options"
                   onClick={() => setCustomerOpen((open) => !open)}
-                  className="flex h-11 w-full items-center justify-between px-4 text-left text-base text-ink-3"
+                  className="flex h-[42px] w-full items-center justify-between px-4 text-left text-base text-ink-3"
                 >
                   <span>{customerId ? customers.find((customer) => customer.id === customerId)?.name : "Walk-in customer"}</span>
                   <ChevronDownIcon className={`size-5 transition-transform ${customerOpen ? "rotate-180" : ""}`} />
@@ -242,7 +214,7 @@ export default function NewSalePage() {
                           setCustomerId(customer.id);
                           setCustomerOpen(false);
                         }}
-                        className="flex h-11 w-full items-center border-t border-[#dedede] px-4 text-left text-base text-ink-2 transition-colors hover:bg-surface-muted"
+                        className="flex h-[42px] w-full items-center border-t border-[#e5e5e5] bg-[#f7f7f7] px-4 text-left text-base text-ink-2 transition-colors hover:bg-surface-muted"
                       >
                         {customer.name}
                       </button>
@@ -252,30 +224,36 @@ export default function NewSalePage() {
               </div>
           </div>
 
-          <div className="flex h-[50px] items-center gap-2 rounded-lg border border-border px-4">
+          <div className="flex h-[50px] items-center gap-2 rounded-xl border border-[#ededed] px-3 shadow-[0_1px_3px_rgba(0,0,0,0.10)]">
             <input
               id="sale-search"
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => { setSearch(event.target.value); setSelectedProduct(null); }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  const match = visibleProducts.find((product) => product.sku.toLowerCase() === search.trim().toLowerCase()) ?? (visibleProducts.length === 1 ? visibleProducts[0] : null);
+                  if (match && (match.isService || (match.stock ?? 0) > 0)) setSelectedProduct(match);
+                }
+              }}
               placeholder="Search by name, or type or scan a SKU and press Enter"
               aria-label="Search products"
               className="min-w-0 flex-1 bg-transparent text-base text-ink-1 outline-none placeholder:text-ink-4"
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {SALE_CATEGORIES.map((category) => (
               <button
                 key={category.id}
                 type="button"
                 aria-pressed={categoryId === category.id}
-                onClick={() => setCategoryId(category.id)}
+                onClick={() => { setCategoryId(category.id); setSelectedProduct(null); }}
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  "h-8 rounded-full border px-[15px] text-sm font-normal shadow-[0_1px_3px_rgba(0,0,0,0.10)] transition-colors",
                   categoryId === category.id
-                    ? "border-primary bg-accent text-accent-foreground"
-                    : "border-border text-ink-2 hover:bg-surface-muted",
+                    ? "border-[#e9e9e9] bg-[#f5f5f5] text-primary"
+                    : "border-[#e9e9e9] bg-white text-ink-2 hover:bg-surface-muted",
                 )}
               >
                 {category.name}
@@ -283,7 +261,12 @@ export default function NewSalePage() {
             ))}
           </div>
 
-          {loading ? (
+          {selectedProduct ? (
+            <ProductConfiguration key={`${selectedProduct.id}-${editingLine?.lineId ?? "new"}`} product={selectedProduct}
+              initialLine={editingLine}
+              onBack={() => setSelectedProduct(null)}
+              onAdd={(selection) => addConfiguredProduct(selectedProduct, selection)} />
+          ) : loading ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {Array.from({ length: 9 }).map((_, index) => (
                 <Skeleton key={index} className="h-[132px] rounded-xl" />
@@ -296,20 +279,13 @@ export default function NewSalePage() {
               description="Try a different search term or category."
             />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-x-[14px] gap-y-[14px] sm:grid-cols-2">
               {visibleProducts.map((product) => (
                 <ProductCard key={product.id} product={product} onSelect={addProduct} />
               ))}
             </div>
           )}
 
-          {selectedProduct?.options && (
-            <ProductConfiguration
-              key={selectedProduct.id}
-              product={selectedProduct}
-              onAdd={(selection) => addConfiguredProduct(selectedProduct, selection)}
-            />
-          )}
         </section>
 
         <CartPanel
@@ -322,9 +298,10 @@ export default function NewSalePage() {
           submitting={submitting}
           onQuantityChange={changeQuantity}
           onRemoveLine={(productId) =>
-            setLines((current) => current.filter((line) => line.productId !== productId))
+            setLines((current) => current.filter((line) => (line.lineId ?? line.productId) !== productId))
           }
           onClear={resetSale}
+          onEditLine={(line) => { setEditingLine(line); setSelectedProduct(products.find((product) => product.id === line.productId) ?? null); }}
           onDiscountModeChange={setDiscountMode}
           onDiscountValueChange={setDiscountValue}
           onPaymentAmountChange={setPaymentAmount}
@@ -338,15 +315,10 @@ export default function NewSalePage() {
         />
       </div>
 
-      <ReceiptDialog
-        receipt={completed}
+      <InvoicePreviewDialog
+        invoice={completed}
         open={Boolean(completed)}
-        onOpenChange={(open) => !open && setCompleted(null)}
-        title="Sale confirmed"
-        onViewSale={() => {
-          setCompleted(null);
-          router.push("/sales/invoices");
-        }}
+        onOpenChange={(open) => { if (!open) { setCompleted(null); resetSale(); } }}
       />
     </div>
   );

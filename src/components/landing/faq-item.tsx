@@ -30,6 +30,7 @@ export function FaqItem({ id, question, answer, open, onToggle }: FaqItemProps) 
       <div
         id={`${id}-panel`}
         role="region"
+        inert={!open}
         aria-labelledby={`${id}-button`}
         className={cn("grid transition-[grid-template-rows] duration-300", open ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}
       >

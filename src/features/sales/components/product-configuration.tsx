@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CheckIcon } from "lucide-react";
+import { useState } from "react";
+import { MinusIcon, PlusIcon } from "lucide-react";
 import { PrimaryButton } from "@/components/button";
 import {
   Select,
@@ -10,65 +10,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatNaira } from "@/lib/format";
-import type { SellableProduct } from "../types";
+import type { CartLine, SellableProduct } from "../types";
 
 interface ProductConfigurationProps {
   product: SellableProduct;
-  onAdd: (selection: { quantity: number; unit: string; price: number }) => void;
+  initialLine?: CartLine | null;
+  onAdd: (selection: { quantity: number; unit: string; price: number; size: string; type: string; maximum: number }) => void;
+  onBack: () => void;
 }
 
-export function ProductConfiguration({ product, onAdd }: ProductConfigurationProps) {
+export function ProductConfiguration({ product, onAdd, onBack, initialLine }: ProductConfigurationProps) {
   const options = product.options;
-  const [size, setSize] = useState(options?.sizes?.[0] ?? "");
-  const [type, setType] = useState(options?.types?.[0] ?? "");
-  const [unit, setUnit] = useState(options?.units?.[0]?.name ?? product.unit);
-  const [quantity, setQuantity] = useState(1);
+  const [size, setSize] = useState(initialLine?.size ?? options?.sizes?.[0] ?? "");
+  const [type, setType] = useState(initialLine?.variant ?? options?.types?.[0] ?? "");
+  const [unit, setUnit] = useState(options?.units?.find((entry) => entry.name.toLowerCase() === initialLine?.unit)?.name ?? options?.units?.[0]?.name ?? product.unit);
+  const [quantity, setQuantity] = useState(initialLine?.quantity ?? 1);
 
-  const selectedUnit = useMemo(
-    () => options?.units?.find((entry) => entry.name === unit),
-    [options?.units, unit],
-  );
+  const selectedUnit = options?.units?.find((entry) => entry.name === unit);
   const price = selectedUnit?.price ?? product.price;
-  const unitLabel = options?.smallestUnit ?? product.unit;
-  const unitPrice = options?.smallestUnitPrice ?? price;
-
-  if (!options) return null;
+  const maximum = selectedUnit?.stock ?? product.stock ?? Number.POSITIVE_INFINITY;
+  const safeQuantity = Math.min(quantity, maximum);
+  const units = options?.units?.map((entry) => entry.name) ?? [product.unit];
 
   return (
-    <section className="mt-3 rounded-[10px] border border-[#d8d8d8] bg-white p-4 shadow-[0_1px_3px_rgba(47,47,47,0.12)]" aria-label={`Configure ${product.name}`}>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <ConfigurationSelect label="Size" value={size} onChange={setSize} values={options.sizes ?? []} />
-        <ConfigurationSelect label="Type" value={type} onChange={setType} values={options.types ?? []} />
-        <ConfigurationSelect label="Unit" value={unit} onChange={setUnit} values={(options.units ?? []).map((entry) => entry.name)} />
-      </div>
-
-      <p className="mt-2 text-xs text-ink-4">No data for this variant</p>
-
-      <div className="mt-3 flex flex-col items-stretch justify-between gap-4 md:flex-row md:items-center">
-        <div className="flex items-center gap-3">
-          <input
-            aria-label="Quantity"
-            type="number"
-            min={1}
-            max={selectedUnit?.stock ?? undefined}
-            value={quantity}
-            onChange={(event) => {
-              const maximum = selectedUnit?.stock ?? Number.POSITIVE_INFINITY;
-              setQuantity(Math.min(maximum, Math.max(1, Number(event.target.value) || 1)));
-            }}
-            className="h-10 w-12 rounded-lg border-0 bg-surface-muted px-3 text-center text-sm font-semibold outline-none"
-          />
-          <span className="text-sm text-ink-2">*{formatNaira(unitPrice)} per {unitLabel}</span>
+    <section className="relative pt-1" aria-label={`Configure ${product.name}`}>
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <button type="button" onClick={onBack} aria-label="Back to all products" title="Back to all products" className="h-[154px] w-[154px] shrink-0 rounded-xl bg-[#caffE8] focus-visible:outline-2 focus-visible:outline-primary" />
+        <div className="min-w-0 flex-1">
+          <h2 className="text-2xl leading-8 text-ink-1">{product.name.replace(/ \(.*$/, "")}</h2>
+          <p className="mt-2 text-base text-ink-1">{product.sku}</p>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {options?.sizes?.length ? <ConfigurationSelect label="Size" value={size} onChange={setSize} values={options.sizes} /> : null}
+            {options?.types?.length ? <ConfigurationSelect label="Flavor" value={type} onChange={setType} values={options.types} /> : null}
+            <div className={options?.sizes?.length ? "" : "sm:col-span-3"}>
+              <ConfigurationSelect label="Unit" value={unit} onChange={setUnit} values={units} />
+              <p className="mt-2 text-xs text-ink-4">{product.isService ? "Service" : `${Number.isFinite(maximum) ? maximum : "Available"} ${unit.toLowerCase()}${maximum === 1 ? "" : "s"} in stock`}</p>
+            </div>
+          </div>
+          <div className="mt-3 flex w-fit h-5 items-center gap-2 rounded border border-[#dedede] px-[3px]">
+            <button type="button" aria-label="Decrease quantity" disabled={safeQuantity <= 1} onClick={() => setQuantity(safeQuantity - 1)} className="rounded bg-primary text-white disabled:opacity-40"><MinusIcon className="size-3" /></button>
+            <span className="min-w-3 text-center text-sm font-semibold">{safeQuantity}</span>
+            <button type="button" aria-label="Increase quantity" disabled={safeQuantity >= maximum} onClick={() => setQuantity(safeQuantity + 1)} className="rounded bg-primary text-white disabled:opacity-40"><PlusIcon className="size-3" /></button>
+          </div>
+          <PrimaryButton fullWidth className="mt-5 h-12" disabled={safeQuantity < 1} onClick={() => onAdd({ quantity: safeQuantity, unit, price, size, type, maximum })}>Add to cart</PrimaryButton>
         </div>
-        <PrimaryButton className="h-11 px-6" onClick={() => onAdd({ quantity, unit, price })}>
-          Add to cart
-        </PrimaryButton>
-      </div>
-
-      <div className="mt-3 flex gap-2.5 rounded-lg border border-[#1597ee] bg-[#f2f8ff] px-4 py-3 text-sm leading-5 text-[#1689d6]">
-        <CheckIcon className="mt-0.5 size-4 shrink-0" />
-        <span>Smart stock depletion: selling sachets auto-converts from Rolls/Cartons when there&apos;s a low - no manual recalculation</span>
       </div>
     </section>
   );
@@ -86,10 +71,10 @@ function ConfigurationSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex min-w-0 flex-col gap-2 text-sm text-ink-3">
+    <label className="flex min-w-0 flex-col gap-2 text-sm text-ink-2">
       {label}
       <Select value={value} onValueChange={(next) => onChange(next ?? "")}>
-        <SelectTrigger className="h-[50px] w-full text-base shadow-none">
+        <SelectTrigger className="h-[50px]! w-full rounded-lg text-base font-normal shadow-none [&_svg]:size-5">
           <SelectValue />
         </SelectTrigger>
         <SelectContent align="start">

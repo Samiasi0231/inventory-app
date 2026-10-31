@@ -99,6 +99,10 @@ export interface SellableProduct {
 }
 
 export interface CartLine {
+  lineId?: string;
+  size?: string;
+  variant?: string;
+  maximum?: number;
   productId: ID;
   name: string;
   sku: string;

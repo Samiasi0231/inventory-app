@@ -1,3 +1,4 @@
+import { LandingMotion } from "@/components/landing/landing-motion";
 
 
 import type { Metadata } from "next";
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
  
 export default function LandingPage() {
   return (
-    <div className="bg-white">
+    <LandingMotion>
       <main>
         <HeroSection />
         <VisibilitySection />
@@ -37,6 +38,6 @@ export default function LandingPage() {
         <CtaSection />
       </main>
       <LandingFooter />
-    </div>
+    </LandingMotion>
   );
 }
