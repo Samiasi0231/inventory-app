@@ -4,6 +4,39 @@ import { MinusIcon, PlusIcon, CheckIcon } from "lucide-react";
 import { PrimaryButton } from "@/components/button";
 import { formatNaira } from "@/lib/format";
 import type { CartLine, SellableProduct } from "../types";
+interface ConfigurationSelectProps {
+  label: string;
+  value: string;
+  values: string[];
+  onChange: (value: string) => void;
+}
+
+function ConfigurationSelect({
+  label,
+  value,
+  values,
+  onChange,
+}: ConfigurationSelectProps) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium text-ink-2">
+        {label}
+      </label>
+
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 w-full rounded-lg border border-[#dedede] bg-white px-3 text-sm text-ink-1 focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        {values.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 interface ProductConfigurationProps {
   product: SellableProduct;
