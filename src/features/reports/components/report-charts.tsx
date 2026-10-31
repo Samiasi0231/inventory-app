@@ -83,10 +83,7 @@ export function LineChart({
                 x2="1000"
                 y1={(index / (ticks.length - 1)) * height}
                 y2={(index / (ticks.length - 1)) * height}
-                className={
-                  index === ticks.length - 1
-                    ? "report-baseline"
-                    : "report-gridline"
+                className={ "report-gridline"
                 }
               />
             ))}

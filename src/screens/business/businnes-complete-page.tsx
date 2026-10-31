@@ -52,7 +52,7 @@ export default function OnboardingCompletePage() {
 
       <PrimaryButton
         fullWidth
-        onClick={() => router.push("/inventory")}
+        onClick={() => router.push("/dashboard")}
         rightIcon={<ArrowRight className="size-4" aria-hidden />}
         className="mt-5"
       >

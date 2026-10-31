@@ -11,6 +11,7 @@ import {
   TriangleAlertIcon,
 } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
+import { FilterMenu } from "@/components/common/filter-menu";
 import { EmptyState } from "@/components/common/empty-state";
 import { FormDialog } from "@/components/common/form-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -193,86 +194,80 @@ export default function AuditLogPage() {
             </div>
 
             <div className="self-start sm:self-auto">
-              <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-                <PopoverTrigger className="flex h-8 items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-bold tracking-[0.14px] text-primary transition-colors hover:bg-surface-muted">
-                  <ListFilterIcon className="size-4" />
-                  Filter
-                  {activeFilters > 0 && (
-                    <span className="flex size-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                      {activeFilters}
-                    </span>
-                  )}
-                  <ChevronDownIcon className="size-4" />
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-[260px] gap-3 p-4">
-                  <select
-                    aria-label="Time period"
-                    value={period}
-                    onChange={(event) => {
-                      setPeriod(event.target.value as AuditPeriod);
-                      setPage(1);
-                    }}
-                    className={filterSelect}
-                  >
-                    {PERIODS.map((entry) => (
-                      <option key={entry} value={entry}>
-                        {AUDIT_PERIOD_LABELS[entry]}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    aria-label="User"
-                    value={user}
-                    onChange={(event) => {
-                      setUser(event.target.value);
-                      setPage(1);
-                    }}
-                    className={filterSelect}
-                  >
-                    <option value="all">All users</option>
-                    {AUDIT_USERS.map((entry) => (
-                      <option key={entry} value={entry}>
-                        {entry}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    aria-label="Module"
-                    value={moduleName}
-                    onChange={(event) => {
-                      setModuleName(event.target.value);
-                      setPage(1);
-                    }}
-                    className={filterSelect}
-                  >
-                    <option value="all">All modules</option>
-                    {AUDIT_MODULES.map((entry) => (
-                      <option key={entry} value={entry}>
-                        {entry}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    aria-label="Action"
-                    value={action}
-                    onChange={(event) => {
-                      setAction(event.target.value as AuditAction | "all");
-                      setPage(1);
-                    }}
-                    className={filterSelect}
-                  >
-                    <option value="all">All actions</option>
-                    {ACTIONS.map((entry) => (
-                      <option key={entry} value={entry}>
-                        {AUDIT_ACTION_LABELS[entry]}
-                      </option>
-                    ))}
-                  </select>
-                </PopoverContent>
-              </Popover>
+            <FilterMenu
+  label="Filter"
+  groups={[
+    {
+      id: "period",
+      label: "Time Period",
+      value: period,
+      options: PERIODS.map((entry) => ({
+        label: AUDIT_PERIOD_LABELS[entry],
+        value: entry,
+      })),
+      defaultValue: "all",
+      defaultLabel: "All time",
+      onChange: (value) => {
+        setPeriod(value as AuditPeriod);
+        setPage(1);
+      },
+    },
+    {
+      id: "user",
+      label: "User",
+      value: user,
+      options: [
+        { label: "All users", value: "all" },
+        ...AUDIT_USERS.map((entry) => ({
+          label: entry,
+          value: entry,
+        })),
+      ],
+      defaultValue: "all",
+      defaultLabel: "All users",
+      onChange: (value) => {
+        setUser(value);
+        setPage(1);
+      },
+    },
+    {
+      id: "module",
+      label: "Module",
+      value: moduleName,
+      options: [
+        { label: "All modules", value: "all" },
+        ...AUDIT_MODULES.map((entry) => ({
+          label: entry,
+          value: entry,
+        })),
+      ],
+      defaultValue: "all",
+      defaultLabel: "All modules",
+      onChange: (value) => {
+        setModuleName(value);
+        setPage(1);
+      },
+    },
+    {
+      id: "action",
+      label: "Action",
+      value: action,
+      options: [
+        { label: "All actions", value: "all" },
+        ...ACTIONS.map((entry) => ({
+          label: AUDIT_ACTION_LABELS[entry],
+          value: entry,
+        })),
+      ],
+      defaultValue: "all",
+      defaultLabel: "All actions",
+      onChange: (value) => {
+        setAction(value as AuditAction | "all");
+        setPage(1);
+      },
+    },
+  ]}
+/>
             </div>
           </div>
 

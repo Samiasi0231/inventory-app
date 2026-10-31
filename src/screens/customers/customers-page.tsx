@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { TopbarAction } from "@/layout/app-topbar";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Filter } from "lucide-react";
 import type { CustomerAction } from "@/components/customers/customer-action-menu";
 import { CustomerFormModal } from "@/components/customers/customer-form-modal";
 import { CustomersTable } from "@/components/customers/customer-table";
 import { ArchiveEntityModal } from "@/components/common/archive-entity-modal";
 import { Panel } from "@/components/common/panel";
-import { FilterDropdown } from "@/components/common/filter-dropdwon";
+import { FilterMenu } from "@/components/common/filter-menu";
 import { ListPageHeader } from "@/components/common/list-page-header";
 import { ListToolbar } from "@/components/common/list-toolbar";
 import { useCustomers } from "@/hooks/use-customer";
@@ -19,7 +19,7 @@ import {
   type Customer,
   type CustomerModalState,
 } from "@/types/customer";
-interface StaffPageProps {
+interface CustomersPageProps {
   title: string;
   description: string;
 }
@@ -27,7 +27,7 @@ interface StaffPageProps {
 const TYPE_FILTERS = ["All types", ...CUSTOMER_TYPES] as const;
 type TypeFilter = (typeof TYPE_FILTERS)[number];
 
-export default function CustomersPage({ title, description }: StaffPageProps) {
+export default function CustomersPage({ title, description }: CustomersPageProps) {
   const router = useRouter();
   // The header's "Add Customer" button navigates to /people/customers?add=1 to open the modal.
   const adding = useSearchParams().get("add") === "1";
@@ -76,15 +76,26 @@ export default function CustomersPage({ title, description }: StaffPageProps) {
     );
 
   return (
-    <div className="min-w-0 space-y-6">
-      <ListPageHeader
-        title="Customer"
-        description="Manage customer records, balances and sales history"
-        branch={branch}
-        branches={BRANCHES}
-        onBranchChange={setBranch}
-        onExport={handleExport}
-      />
+   <div className="min-w-0 space-y-6">
+    <TopbarAction>
+      <button
+        type="button"
+        onClick={() => router.push("/people/customers?add=1")}
+        className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:opacity-90"
+      >
+        <span className="text-lg leading-none">+</span>
+        Add Customer
+      </button>
+    </TopbarAction>
+
+    <ListPageHeader
+      title="Customer"
+      description="Manage customer records, balances and sales history"
+      branch={branch}
+      branches={BRANCHES}
+      onBranchChange={setBranch}
+      onExport={handleExport}
+    />
 
       <Panel>
         <ListToolbar
@@ -92,12 +103,11 @@ export default function CustomersPage({ title, description }: StaffPageProps) {
           onSearchChange={setQuery}
           placeholder="Search customers"
         >
-          <FilterDropdown
+          <FilterMenu
             value={typeFilter}
             options={TYPE_FILTERS}
             onChange={setTypeFilter}
-            icon={<Filter size={13} />}
-            label={typeFilter === "All types" ? "Filter" : typeFilter}
+            defaultValue="All types"
           />
         </ListToolbar>
         <CustomersTable customers={visible} onAction={handleAction} />
