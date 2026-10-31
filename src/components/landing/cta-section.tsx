@@ -12,7 +12,7 @@ export function CtaSection() {
           <p className="mx-auto mt-3 max-w-md text-sm text-neutral-600">
             Join thousands of Nigerian entrepreneurs who are running their businesses smarter with RIINOX.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <div data-motion-reveal className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <ButtonLink href="/signin" variant="outline" size="md">
               Sign in
             </ButtonLink>

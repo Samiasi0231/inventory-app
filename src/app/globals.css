@@ -164,3 +164,45 @@ input:autofill:focus {
 
 
 
+@media print {
+  body:has(.invoice-print) * { visibility: hidden; }
+  .invoice-print, .invoice-print * { visibility: visible !important; }
+  body:has(.invoice-print) [role="dialog"] {
+    position: absolute !important;
+    inset: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  body:has(.invoice-print) [role="dialog"] > div { overflow: visible !important; }
+  .invoice-print {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    min-height: 0;
+    padding: 24px;
+    color: #222;
+  }
+}
+
+/* Keep the full invoice available to the printer, including on narrow screens. */
+@media print {
+  body:has(.invoice-print) { overflow: visible !important; }
+  body:has(.invoice-print) [data-slot="dialog-portal"],
+  body:has(.invoice-print) [data-slot="dialog-viewport"],
+  body:has(.invoice-print) .invoice-preview-mat {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+  .invoice-print {
+    min-width: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+  .invoice-print tr { break-inside: avoid; }
+}

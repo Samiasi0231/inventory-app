@@ -31,6 +31,7 @@ interface CartPanelProps {
   onQuantityChange: (productId: string, quantity: number) => void;
   onRemoveLine: (productId: string) => void;
   onClear: () => void;
+  onEditLine?: (line: CartLine) => void;
   onDiscountModeChange: (mode: DiscountMode) => void;
   onDiscountValueChange: (value: number) => void;
   onPaymentAmountChange: (value: string) => void;
@@ -52,6 +53,7 @@ export function CartPanel({
   onQuantityChange,
   onRemoveLine,
   onClear,
+  onEditLine,
   onDiscountModeChange,
   onDiscountValueChange,
   onPaymentAmountChange,
@@ -80,6 +82,10 @@ export function CartPanel({
       <div className="flex items-center justify-between">
         <h2 className="text-lg leading-6 font-semibold text-ink-1">
           Cart{lines.length > 0 && <span className="ml-1 text-xs font-normal text-ink-3">· {itemCount} items</span>}
+    <aside className="flex h-fit min-w-0 flex-col gap-0 rounded-xl bg-surface p-5 xl:min-h-[780px] xl:sticky xl:top-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg leading-6 font-semibold text-ink-1">
+          Cart{lines.length > 0 && <span className="ml-1 text-xs font-normal text-ink-3">{itemCount} {itemCount === 1 ? "item" : "items"}</span>}
         </h2>
         <button
           type="button"
@@ -91,31 +97,31 @@ export function CartPanel({
         </button>
       </div>
 
-      {lines.length === 0 ? (
-        <p className="py-5 text-center text-sm text-ink-3">Tap a product to add it to the sale.</p>
-      ) : (
-        <ul className="flex max-h-[300px] flex-col gap-3 overflow-y-auto">
+      <p className="mt-[46px] mb-6 text-center text-base text-ink-2">Tap a product to add it to the sale.</p>
+      {lines.length > 0 && (
+        <ul className="mb-3 flex max-h-[300px] flex-col gap-4 overflow-y-auto">
           {lines.map((line) => (
-            <li key={line.productId} className="block">
+            <li key={line.lineId ?? line.productId} className="block">
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="truncate text-sm font-semibold text-ink-1">{line.name}</p>
+                  <p title={line.name} className="truncate text-sm font-semibold text-ink-1">{line.name.split(" · ")[0]}</p>
                   <p className="shrink-0 text-sm font-semibold text-ink-1">{formatNaira(line.unitPrice * line.quantity)}</p>
                 </div>
-                <p className="text-xs text-ink-4">
-                  {formatCurrency(line.unitPrice)} / Item
+                <p className="mt-1 text-sm text-ink-2">
+                  {formatNaira(line.unitPrice)} / Item
+                  {onEditLine && <button type="button" onClick={() => onEditLine(line)} className="ml-2 text-primary">Change</button>}
                 </p>
                 <div className="mt-2 flex items-center justify-between">
-                  <div className="flex shrink-0 items-center gap-2">
-                    <button type="button" aria-label={`Decrease ${line.name}`} onClick={() => onQuantityChange(line.productId, line.quantity - 1)} className="flex size-[18px] items-center justify-center rounded bg-primary text-white">
+                  <div className="flex h-5 shrink-0 items-center gap-2 rounded border border-[#dedede] px-[3px]">
+                    <button type="button" aria-label={`Decrease ${line.name}`} onClick={() => onQuantityChange(line.lineId ?? line.productId, line.quantity - 1)} className="flex h-[14px] w-[12px] items-center justify-center rounded bg-primary text-white">
                       <MinusIcon className="size-3" />
                     </button>
                     <span className="min-w-3 text-center text-sm font-medium text-ink-1">{line.quantity}</span>
-                    <button type="button" aria-label={`Increase ${line.name}`} onClick={() => onQuantityChange(line.productId, line.quantity + 1)} className="flex size-[18px] items-center justify-center rounded bg-primary text-white">
+                    <button type="button" aria-label={`Increase ${line.name}`} onClick={() => onQuantityChange(line.lineId ?? line.productId, line.quantity + 1)} className="flex h-[14px] w-[12px] items-center justify-center rounded bg-primary text-white">
                       <PlusIcon className="size-3" />
                     </button>
                   </div>
-                  <button type="button" aria-label={`Remove ${line.name}`} onClick={() => onRemoveLine(line.productId)} className="shrink-0 rounded p-1 text-ink-4 transition-colors hover:bg-danger-bg hover:text-danger-fg">
+                  <button type="button" aria-label={`Remove ${line.name}`} onClick={() => onRemoveLine(line.lineId ?? line.productId)} className="shrink-0 rounded p-1 text-ink-4 transition-colors hover:bg-danger-bg hover:text-danger-fg">
                     <Trash2Icon className="size-4" />
                   </button>
                 </div>
@@ -125,7 +131,7 @@ export function CartPanel({
         </ul>
       )}
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1">
         <label htmlFor="discount" className="text-sm font-semibold text-ink-2">
           Discount
         </label>
@@ -136,7 +142,7 @@ export function CartPanel({
             min={0}
             value={discountValue}
             onChange={(event) => onDiscountValueChange(Number(event.target.value) || 0)}
-            className="h-10"
+            className="h-11"
           />
           <div className="flex shrink-0 overflow-hidden rounded-lg border border-border">
             {(["amount", "percentage"] as DiscountMode[]).map((mode) => (
@@ -146,7 +152,7 @@ export function CartPanel({
                 aria-pressed={discountMode === mode}
                 onClick={() => onDiscountModeChange(mode)}
                 className={cn(
-                  "size-10 text-sm font-medium transition-colors",
+                  "h-[42px] w-9 text-sm font-medium transition-colors",
                   discountMode === mode
                     ? "bg-primary text-primary-foreground"
                     : "bg-surface text-ink-2 hover:bg-surface-muted",
@@ -159,20 +165,20 @@ export function CartPanel({
         </div>
       </div>
 
-      <dl className="flex flex-col gap-1 text-sm">
+      <dl className="mt-3 flex flex-col gap-2 text-sm">
         <Row label="Subtotal" value={formatCurrency(subtotal)} />
         {discount > 0 && <Row label="Discount" value={`-${formatCurrency(discount)}`} />}
         <Row label="VAT" value={formatCurrency(vat)} />
       </dl>
 
-      <div className="border-t border-dashed border-border pt-3">
+      <div className="mt-3 border-t border-dashed border-[#999] pt-2">
         <div className="flex items-baseline justify-between">
-          <span className="text-lg font-semibold text-ink-1">Total</span>
+          <span className="text-2xl font-semibold text-ink-1">Total</span>
           <span className="text-2xl font-semibold text-ink-1">{formatCurrency(total)}</span>
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="mt-3 flex flex-col gap-2">
         <p className="text-sm font-semibold text-ink-2">Payment</p>
 
         {payments.length > 0 && !fullyPaid && (
@@ -208,18 +214,18 @@ export function CartPanel({
             value={
               paymentFocused || !paymentAmount
                 ? paymentAmount
-                : formatCurrency(Number(paymentAmount) || 0)
+                : formatNaira(Number(paymentAmount) || 0)
             }
             onFocus={() => setPaymentFocused(true)}
             onBlur={() => setPaymentFocused(false)}
             onChange={(event) => onPaymentAmountChange(event.target.value.replace(/[^\d.]/g, ""))}
-            className="h-10"
+            className="h-[46px]"
           />
           <Select
             value={paymentMethod}
             onValueChange={(value) => onPaymentMethodChange(value as SalePayment["method"])}
           >
-            <SelectTrigger aria-label="Payment method" className="h-10 w-28 shrink-0">
+            <SelectTrigger aria-label="Payment method" className="h-[46px]! w-[114px] shrink-0">
               <SelectValue>{paymentMethodLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent align="start">
@@ -231,16 +237,16 @@ export function CartPanel({
         </div>
 
         <div className="flex items-center gap-2">
-          <SecondaryButton fullWidth className="h-10" onClick={onAddPayment}>
+          <SecondaryButton fullWidth className="h-[34px] text-sm font-normal text-ink-2" onClick={onAddPayment}>
             Add payment
           </SecondaryButton>
-          <SecondaryButton fullWidth className="h-10" onClick={onPayRemaining}>
+          <SecondaryButton fullWidth className="h-[34px] text-sm font-normal text-ink-2" onClick={onPayRemaining}>
             Pay remaining in full
           </SecondaryButton>
         </div>
 
         {fullyPaid && (
-          <div className="flex min-h-[42px] items-center gap-3 rounded-lg border border-[#1597ee] bg-[#d9edff] px-4 py-2.5 text-sm text-[#1689d6]" role="status">
+          <div className="flex min-h-[42px] items-center gap-3 rounded-lg border border-[#1597ee] bg-[#c9e3fc] px-4 py-2.5 text-sm text-[#1689d6]" role="status">
             <CheckIcon className="size-4" />
             <span>Fully paid.</span>
           </div>
@@ -256,8 +262,9 @@ export function CartPanel({
 
       <PrimaryButton
         fullWidth
-        className="h-12"
+        className="mt-[10px] h-12 text-base"
         loading={submitting}
+        disabled={lines.length === 0 || submitting}
         onClick={onConfirm}
       >
         Confirm sale

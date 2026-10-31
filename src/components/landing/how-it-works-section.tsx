@@ -25,7 +25,7 @@ export function HowItWorksSection() {
             </ol>
           </div>
  
-          <div className="rounded-3xl bg-brand-50 p-6 sm:p-12">
+          <div data-motion-reveal data-reveal-direction="side" className="rounded-3xl bg-brand-50 p-6 sm:p-12">
             <SignupPreviewCard />
           </div>
         </div>

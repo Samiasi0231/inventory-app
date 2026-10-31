@@ -26,7 +26,7 @@ export const SALE_CATEGORIES = [
 ];
 
 export const MOCK_SELLABLE_PRODUCTS: SellableProduct[] = [
-  { id: "sp_001", name: "Indomie Chicken (carton of 40)", sku: "IND-CH-40", categoryId: "groceries", categoryName: "Groceries", unit: "carton", price: 9_800, stock: 60, isService: false, options: { sizes: ["10", "20", "40"], types: ["Super-pack", "Hungry Man"], units: [{ name: "Carton", price: 9_800, stock: 60 }, { name: "Roll", price: 1_500, stock: 8 }, { name: "Sachet", price: 150, stock: null }], smallestUnit: "sachet", smallestUnitPrice: 150 } },
+  { id: "sp_001", name: "Indomie Chicken (carton of 40)", sku: "IND-CH-40", categoryId: "groceries", categoryName: "Groceries", unit: "carton", price: 9_800, stock: 60, isService: false, options: { sizes: ["Small", "Medium", "Large"], types: ["Onion", "Chicken"], units: [{ name: "Carton", price: 9_800, stock: 12 }, { name: "Roll", price: 1_500, stock: 8 }, { name: "Sachet", price: 150, stock: null }], smallestUnit: "sachet", smallestUnitPrice: 150 } },
   { id: "sp_002", name: "Peak Milk Tin (carton of 48)", sku: "PKM-48", categoryId: "dairy", categoryName: "Dairy", unit: "carton", price: 42_500, stock: 20, isService: false },
   { id: "sp_003", name: "Mama Gold Rice (50kg bag)", sku: "MGR-50", categoryId: "grains", categoryName: "Grains", unit: "bag", price: 82_000, stock: 16, isService: false },
   { id: "sp_004", name: "Kings Vegetable Oil (5 L)", sku: "KVO-5L", categoryId: "oils", categoryName: "Oils", unit: "each", price: 12_500, stock: 40, isService: false },

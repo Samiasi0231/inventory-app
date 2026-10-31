@@ -56,13 +56,7 @@ export function ProductDetails({ item, onBack, onSuccess }: { item: InventoryIte
   return <div className="flex min-w-0 flex-col gap-6">
     <TopbarBreadcrumb section="Inventory / Products" page={item.name} />
     <TopbarAction><PrimaryButton className="h-12 px-6" onClick={() => setAdding(true)}>＋ Add Product</PrimaryButton></TopbarAction>
-<button
-  className="mt-4 ml-4 flex w-fit items-center gap-2 text-sm font-semibold text-primary"
-  onClick={onBack}
->
-  <span aria-hidden>←</span>
-  Back to Products
-</button>
+    <button className="flex w-fit items-center gap-2 px-3 text-sm font-semibold text-primary" onClick={onBack}><span aria-hidden>←</span> Back to Products</button>
     <section className="rounded-xl bg-surface p-6">
       <div className="flex flex-wrap items-center gap-5 border-b border-border/30 pb-6">
         {values.imageDataUrl && <Image src={values.imageDataUrl} alt={item.name} width={60} height={60} unoptimized className="size-15 rounded-lg object-cover" />}
