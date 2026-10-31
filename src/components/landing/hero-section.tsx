@@ -1,3 +1,4 @@
+import { TextGenerateEffect } from "./text-generate-effect";
 import { ButtonLink } from "@/components/landing/button-link";
 import { Container } from "@/components/landing/container";
 import { Pill } from "@/components/landing/pill";
@@ -26,9 +27,9 @@ export function HeroSection() {
             <Container className="relative flex flex-col items-center pt-32 text-center sm:pt-40">
                 <Pill tone="white">All in one business management</Pill>
 
-                <h1 className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] text-white sm:text-6xl">
-                    Run Your Entire Business <br className="hidden sm:block" />
-                    From One Place.
+                <h1 aria-label="Run Your Entire Business From One Place." className="mt-6 max-w-3xl text-4xl font-bold leading-[1.1] text-white sm:text-6xl">
+                    <TextGenerateEffect words="Run Your Entire Business" /> <br className="hidden sm:block" />
+                    <TextGenerateEffect words="From One Place." startDelay={936} />
                 </h1>
 
                 <p className="mt-5 max-w-xl text-sm text-white/90 sm:text-base">
@@ -36,7 +37,7 @@ export function HeroSection() {
                     businesses.
                 </p>
 
-                <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+                <div data-motion-reveal className="mt-8 flex flex-wrap items-center justify-center gap-4">
                     <ButtonLink href="#contact" variant="ghost" size="md">
                         Get Demo
                     </ButtonLink>
@@ -46,10 +47,12 @@ export function HeroSection() {
                 </div>
             </Container>
 
-            {/* The preview scales itself to this width; below lg the section has no fixed height, so crop it here. */}
-        <div className="relative mx-auto mt-14 w-full max-w-[1100px] px-4 sm:px-6 lg:mt-20">
-    <DashboardPreview />
-</div>
+            {/* Below lg the section has no fixed height, so crop the preview here instead. */}
+            <div className="relative mx-auto mt-14 max-h-[340px] w-full max-w-[1100px] overflow-visible px-4 sm:max-h-[480px] sm:px-6 lg:mt-20 lg:max-h-none">
+                <div data-dashboard-motion>
+                    <DashboardPreview />
+                </div>
+            </div>
 
             {/* Fade the bottom of the hero (and the preview's cut edge) into the white section below. */}
           <div

@@ -1,0 +1,76 @@
+/* Scoped to marketing; no document-level smooth scrolling. */
+.landing-motion [data-dashboard-motion] {
+  transform-origin: center top;
+  backface-visibility: hidden;
+}
+.landing-motion a, .landing-motion button {
+  -webkit-tap-highlight-color: transparent;
+}
+.landing-motion a:focus-visible, .landing-motion button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing-motion a.inline-flex, .landing-motion button {
+    transition: transform 280ms cubic-bezier(.22,1,.36,1), color 280ms ease, background-color 280ms ease, border-color 280ms ease;
+  }
+  .landing-motion a.inline-flex:active, .landing-motion button:active:not(:disabled) {
+    transform: scale(.97);
+  }
+  .landing-motion [role="menu"], .landing-motion nav[aria-label="Mobile"] {
+    animation: landing-menu-in 280ms cubic-bezier(.22,1,.36,1);
+  }
+  .landing-motion #solutions a svg {
+    transition: transform 350ms cubic-bezier(.22,1,.36,1);
+  }
+  .landing-motion #solutions a:is(:hover,:focus-visible) svg { transform: translateX(3px); }
+  @media (hover: hover) {
+    .landing-motion a.inline-flex:hover { transform: translateY(-2px); }
+  }
+  .landing-motion [data-reveal-pending] { opacity: 0; }
+  @media (min-width: 1024px) and (min-height: 800px) {
+    .landing-motion #solutions {
+      position: relative;
+      min-height: calc(100vh + 1400px);
+    }
+    .landing-motion #solutions .audience-pin {
+      position: sticky;
+      top: 96px;
+    }
+    .landing-motion #solutions .audience-track { scroll-snap-type: none; }
+  }
+}
+@keyframes landing-menu-in {
+  from { opacity: 0; clip-path: inset(0 0 12% 0); }
+  to { opacity: 1; clip-path: inset(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-motion *, .landing-motion *::before, .landing-motion *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .landing-motion a.inline-flex:active { transform: scale(.97); }
+}
+
+/* Each word stays intact; transparent characters reserve the final headline size. */
+.landing-type-word { display: inline-block; white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .landing-type-character {
+    animation: landing-type-in 180ms ease-out both;
+    animation-delay: var(--type-delay);
+  }
+  .landing-motion #features article > div {
+    transition: transform 550ms cubic-bezier(.22,1,.36,1);
+  }
+  @media (hover: hover) {
+    .landing-motion #features article:hover > div { transform: translateY(-3px); }
+  }
+}
+@keyframes landing-type-in {
+  from { opacity: 0; filter: blur(2px); }
+  to { opacity: 1; filter: blur(0); }
+}

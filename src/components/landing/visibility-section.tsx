@@ -43,7 +43,7 @@ interface PolaroidStackProps {
  */
 function PolaroidStack({ src, alt, backSrc, caption, exportedImage }: PolaroidStackProps) {
   return (
-    <div className="relative mx-auto aspect-[41/49] w-[300px] sm:w-[410px]">
+    <div data-motion-reveal data-reveal-direction="side" className="relative mx-auto aspect-[41/49] w-[300px] sm:w-[410px]">
       {/* Back: dark card, only its left and top edges show */}
       <div
         aria-hidden
