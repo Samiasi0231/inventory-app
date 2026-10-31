@@ -6,6 +6,8 @@ import type {
   ProductSettings,
   StaffRole,
 } from "./types";
+import type { RoleDetail, RolePayload, RolePermissions } from "@/types/role-types";
+import { PERMISSION_AREAS } from "@/types/permission-config";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -58,7 +60,7 @@ let locations: BusinessLocation[] = [
   },
 ];
 
-const roles: StaffRole[] = [
+let roles: StaffRole[] = [
   { id: "role_owner", name: "Owner", description: "Full control of organization", staffCount: 1, type: "system" },
   { id: "role_manager", name: "Manager", description: "Operations, approvals and reports", staffCount: 1, type: "system" },
   { id: "role_sales", name: "Sales Representative", description: "Create sales and reciepts", staffCount: 4, type: "system" },
@@ -66,6 +68,39 @@ const roles: StaffRole[] = [
   { id: "role_inv_staff", name: "Inventory Staff", description: "Receive and count stock", staffCount: 4, type: "system" },
   { id: "role_warehouse", name: "Warehouse  Supervisor", description: "Receive and count stock", staffCount: 4, type: "custom" },
 ];
+
+// Permissions per role (mock). Owner gets every action the matrix allows.
+const ownerPermissions: RolePermissions = Object.fromEntries(
+  PERMISSION_AREAS.map((area) => [area.id, [...area.actions]]),
+);
+
+let rolePermissions: Record<ID, RolePermissions> = {
+  role_owner: ownerPermissions,
+  role_manager: {
+    dashboard: ["view", "export"],
+    sales: ["view", "create", "edit", "export"],
+    purchasing: ["view", "create", "edit", "export"],
+    inventory: ["view", "create", "edit", "export"],
+    reports: ["view", "export"],
+    approvals: ["view", "approve"],
+  },
+  role_sales: {
+    sales: ["view", "create"],
+    customers: ["view", "create"],
+    invoices: ["view", "create"],
+  },
+  role_inv_mgr: {
+    inventory: ["view", "create", "edit", "cancel", "export"],
+    approvals: ["view", "approve"],
+  },
+  role_inv_staff: {
+    inventory: ["view", "create"],
+  },
+  role_warehouse: {
+    inventory: ["view", "create", "edit"],
+    suppliers: ["view"],
+  },
+};
 
 let approvalRules: ApprovalRule[] = [
   {
@@ -210,6 +245,48 @@ export const settingsService = {
   async listRoles(): Promise<StaffRole[]> {
     await sleep(450);
     return roles;
+  },
+
+  async getRole(id: ID): Promise<RoleDetail> {
+    await sleep(350);
+    const role = roles.find((entry) => entry.id === id);
+    if (!role) throw new Error("Role not found");
+    return {
+      id: role.id,
+      name: role.name,
+      description: role.description,
+      type: role.type,
+      permissions: rolePermissions[id] ?? {},
+    };
+  },
+
+  async createRole(payload: RolePayload): Promise<RoleDetail> {
+    await sleep(700);
+    const role: StaffRole = {
+      id: `role_${Date.now()}`,
+      name: payload.name,
+      description: payload.description ?? "",
+      staffCount: 0,
+      type: "custom",
+    };
+    roles = [...roles, role];
+    rolePermissions = { ...rolePermissions, [role.id]: payload.permissions };
+    return { ...role, permissions: payload.permissions };
+  },
+
+  async updateRole(id: ID, payload: RolePayload): Promise<RoleDetail> {
+    await sleep(700);
+    const existing = roles.find((entry) => entry.id === id);
+    if (!existing) throw new Error("Role not found");
+    if (existing.type === "system") throw new Error("System roles can't be edited");
+    const updated: StaffRole = {
+      ...existing,
+      name: payload.name,
+      description: payload.description ?? "",
+    };
+    roles = roles.map((entry) => (entry.id === id ? updated : entry));
+    rolePermissions = { ...rolePermissions, [id]: payload.permissions };
+    return { ...updated, permissions: payload.permissions };
   },
 
   async listApprovalRules(): Promise<ApprovalRule[]> {

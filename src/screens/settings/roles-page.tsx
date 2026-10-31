@@ -1,6 +1,14 @@
 "use client";
 
-import { MoreHorizontalIcon, PlusIcon, TriangleAlertIcon, UsersIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ArchiveIcon,
+  EyeIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  TriangleAlertIcon,
+  UsersIcon,
+} from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
 import { EmptyState } from "@/components/common/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +41,10 @@ const COLUMNS = [
   { id: "actions", label: "Actions", width: "w-[90px]" },
 ];
 
+const ROLES_PATH = "/settings/roles";
+
 export default function RolesPage() {
+  const router = useRouter();
   const awaitingDesign = useAwaitingDesign();
   const { data, loading, error, refetch } = useAsyncResource(
     "roles",
@@ -49,7 +60,7 @@ export default function RolesPage() {
       description="Control access to RIINOX modules and business actions"
       action={
         <PrimaryButton
-          onClick={() => awaitingDesign("Creating a custom role")}
+          onClick={() => router.push(`${ROLES_PATH}/new`)}
           leftIcon={<PlusIcon className="size-5" />}
         >
           Custom Role
@@ -113,22 +124,14 @@ export default function RolesPage() {
                             <MoreHorizontalIcon className="size-5" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => awaitingDesign("Viewing a role's permissions")}
-                            >
-                              View Permissions
+                            <DropdownMenuItem onClick={() => router.push(`${ROLES_PATH}/${role.id}`)}>
+                              <EyeIcon className="size-4" />
+                              View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => awaitingDesign("Editing a role")}>
-                              Edit Role
+                            <DropdownMenuItem onClick={() => awaitingDesign("Archiving a role")}>
+                              <ArchiveIcon className="size-4" />
+                              Archive
                             </DropdownMenuItem>
-                            {role.type === "custom" && (
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() => awaitingDesign("Deleting a custom role")}
-                              >
-                                Delete Role
-                              </DropdownMenuItem>
-                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

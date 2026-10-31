@@ -161,6 +161,9 @@ input:autofill:focus {
   }
 }
 
+
+
+
 @media print {
   body:has(.invoice-print) * { visibility: hidden; }
   .invoice-print, .invoice-print * { visibility: visible !important; }

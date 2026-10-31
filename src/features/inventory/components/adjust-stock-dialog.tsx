@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFieldArray, useForm } from "react-hook-form";
@@ -6,17 +7,27 @@ import { PlusIcon, Trash2Icon } from "lucide-react";
 import { z } from "zod";
 import { FormDialog } from "@/components/common/form-dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/button";
-import { Field, SelectInput, TextInput, TextareaInput } from "@/components/form/app-fields";
+import {
+  Field,
+  SelectInput,
+  TextInput,
+  TextareaInput,
+} from "@/components/form/app-fields";
 import { useToast } from "@/components/ui/toast";
 import { useBranch } from "@/context/branch-context";
 import { formatNumber } from "@/lib/format";
 import { MOCK_UNITS } from "../mock-data";
 import { inventoryService } from "../inventory.service";
-import { ADJUSTMENT_REASONS, type AdjustmentReason, type InventoryItem } from "../types";
+import {
+  ADJUSTMENT_REASONS,
+  type AdjustmentReason,
+  type InventoryItem,
+} from "../types";
 
 const adjustSchema = z.object({
   direction: z.enum(["increase", "decrease"]),
   branchId: z.string().min(1, "Select a location"),
+  date: z.string().min(1, "Select a date"),
   createdBy: z.string().min(1, "Select who is raising this"),
   reason: z.string().min(1, "Select a reason"),
   lines: z
@@ -34,7 +45,11 @@ const adjustSchema = z.object({
 
 type AdjustValues = z.input<typeof adjustSchema>;
 
-const CREATED_BY_OPTIONS = ["Inventory Manager", "Branch Manager", "Owner"];
+const CREATED_BY_OPTIONS = [
+  "Inventory Manager",
+  "Branch Manager",
+  "Owner",
+];
 
 interface AdjustStockDialogProps {
   item: InventoryItem;
@@ -62,14 +77,25 @@ export function AdjustStockDialog({
     defaultValues: {
       direction: "decrease",
       branchId: item.branchId,
+      date: new Date().toISOString().slice(0, 10),
       createdBy: CREATED_BY_OPTIONS[0],
       reason: "",
-      lines: [{ unit: item.baseUnit, quantity: 1, variant: "", batchCode: "" }],
+      lines: [
+        {
+          unit: item.baseUnit,
+          quantity: 1,
+          variant: "",
+          batchCode: "",
+        },
+      ],
       notes: "",
     },
   });
 
-  const { fields, append, remove } = useFieldArray({ control, name: "lines" });
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "lines",
+  });
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -82,7 +108,9 @@ export function AdjustStockDialog({
             quantity: Number(line.quantity),
             unit: line.unit,
             reason: values.reason as AdjustmentReason,
-            date: new Date().toISOString(),
+            date: new Date(
+              `${values.date}T12:00:00`,
+            ).toISOString(),
             notes: values.notes,
           }),
         ),
@@ -93,13 +121,15 @@ export function AdjustStockDialog({
         title: "Stock adjusted",
         description: `${item.name} • reference ${results[0].reference}`,
       });
+
       onOpenChange(false);
       onSuccess?.();
     } catch {
       toast.add({
         type: "error",
         title: "Adjustment failed",
-        description: "We couldn't save this adjustment. Please try again.",
+        description:
+          "We couldn't save this adjustment. Please try again.",
       });
     }
   });
@@ -112,35 +142,66 @@ export function AdjustStockDialog({
       description="Correct stock levels for damage, loss or a recount"
       footer={
         <>
-          <SecondaryButton onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <SecondaryButton
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
             Cancel
           </SecondaryButton>
+
           <PrimaryButton onClick={onSubmit} loading={isSubmitting}>
             Save Adjustment
           </PrimaryButton>
         </>
       }
     >
-      <form onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form
+        onSubmit={onSubmit}
+        className="flex flex-col gap-5"
+      >
         <div className="rounded-lg bg-accent p-4">
-          <p className="truncate text-sm font-semibold text-ink-1">{item.name}</p>
+          <p className="truncate text-sm font-semibold text-ink-1">
+            {item.name}
+          </p>
+
           <p className="text-xs text-ink-3">
-            Available stock: {formatNumber(item.totalStock)} {item.baseUnit.toLowerCase()}
+            Available stock: {formatNumber(item.totalStock)}{" "}
+            {item.baseUnit.toLowerCase()}
             {item.totalStock === 1 ? "" : "s"}
           </p>
         </div>
 
+        {/* Adjustment Type and Location */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Adjustment Type" htmlFor="direction" required error={errors.direction?.message}>
-            <SelectInput id="direction" invalid={!!errors.direction} {...register("direction")}>
+          <Field
+            label="Adjustment Type"
+            htmlFor="direction"
+            required
+            error={errors.direction?.message}
+          >
+            <SelectInput
+              id="direction"
+              invalid={!!errors.direction}
+              {...register("direction")}
+            >
               <option value="increase">Add Stock</option>
               <option value="decrease">Remove Stock</option>
             </SelectInput>
           </Field>
 
-          <Field label="Location" htmlFor="branchId" required error={errors.branchId?.message}>
-            <SelectInput id="branchId" invalid={!!errors.branchId} {...register("branchId")}>
+          <Field
+            label="Location"
+            htmlFor="branchId"
+            required
+            error={errors.branchId?.message}
+          >
+            <SelectInput
+              id="branchId"
+              invalid={!!errors.branchId}
+              {...register("branchId")}
+            >
               <option value="">Select Location</option>
+
               {branches.map((branch) => (
                 <option key={branch.id} value={branch.id}>
                   {branch.name}
@@ -149,8 +210,33 @@ export function AdjustStockDialog({
             </SelectInput>
           </Field>
 
-          <Field label="Created by" htmlFor="createdBy" error={errors.createdBy?.message}>
-            <SelectInput id="createdBy" invalid={!!errors.createdBy} {...register("createdBy")}>
+          {/* Date on the left, Created by on the right */}
+        
+<Field
+  label="Date"
+  htmlFor="adjustment-date"
+  required
+  error={errors.date?.message}
+>
+  <input
+    id="adjustment-date"
+    type="date"
+    {...register("date")}
+    className="h-11 w-full rounded-md border border-border bg-background px-3 text-sm text-ink-1 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+  />
+</Field>
+
+
+          <Field
+            label="Created by"
+            htmlFor="createdBy"
+            error={errors.createdBy?.message}
+          >
+            <SelectInput
+              id="createdBy"
+              invalid={!!errors.createdBy}
+              {...register("createdBy")}
+            >
               {CREATED_BY_OPTIONS.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -160,8 +246,11 @@ export function AdjustStockDialog({
           </Field>
         </div>
 
+        {/* Product Details */}
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-ink-2">Product Details</p>
+          <p className="text-sm font-medium text-ink-2">
+            Product Details
+          </p>
 
           <div className="overflow-hidden rounded-lg border border-border">
             <div className="hidden grid-cols-[1.3fr_1fr_1.1fr_1fr_0.8fr_auto] gap-3 bg-surface-muted px-4 py-3 text-xs font-semibold text-ink-1 sm:grid">
@@ -178,9 +267,15 @@ export function AdjustStockDialog({
                 key={field.id}
                 className="grid grid-cols-1 items-center gap-3 border-t border-border/60 px-4 py-3 sm:grid-cols-[1.3fr_1fr_1.1fr_1fr_0.8fr_auto]"
               >
-                <p className="truncate text-sm text-ink-2">{item.name}</p>
+                <p className="truncate text-sm text-ink-2">
+                  {item.name}
+                </p>
 
-                <SelectInput aria-label="Variant" className="h-9 text-sm" {...register(`lines.${index}.variant`)}>
+                <SelectInput
+                  aria-label="Variant"
+                  className="h-9 text-sm"
+                  {...register(`lines.${index}.variant`)}
+                >
                   <option value="">None</option>
                   <option value="large-milk">Large / Milk</option>
                   <option value="small-dark">Small / Dark</option>
@@ -193,7 +288,11 @@ export function AdjustStockDialog({
                   {...register(`lines.${index}.batchCode`)}
                 />
 
-                <SelectInput aria-label="Unit" className="h-9 text-sm" {...register(`lines.${index}.unit`)}>
+                <SelectInput
+                  aria-label="Unit"
+                  className="h-9 text-sm"
+                  {...register(`lines.${index}.unit`)}
+                >
                   {MOCK_UNITS.map((unit) => (
                     <option key={unit.id} value={unit.name}>
                       {unit.name}
@@ -225,7 +324,14 @@ export function AdjustStockDialog({
 
           <button
             type="button"
-            onClick={() => append({ unit: item.baseUnit, quantity: 1, variant: "", batchCode: "" })}
+            onClick={() =>
+              append({
+                unit: item.baseUnit,
+                quantity: 1,
+                variant: "",
+                batchCode: "",
+              })
+            }
             className="flex w-fit items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-brand-700"
           >
             <PlusIcon className="size-4" />
@@ -233,9 +339,20 @@ export function AdjustStockDialog({
           </button>
         </div>
 
-        <Field label="Select Reason" htmlFor="reason" required error={errors.reason?.message}>
-          <SelectInput id="reason" invalid={!!errors.reason} {...register("reason")}>
+        {/* Adjustment Reason */}
+        <Field
+          label="Select Reason"
+          htmlFor="reason"
+          required
+          error={errors.reason?.message}
+        >
+          <SelectInput
+            id="reason"
+            invalid={!!errors.reason}
+            {...register("reason")}
+          >
             <option value="">Select Reason</option>
+
             {ADJUSTMENT_REASONS.map((reason) => (
               <option key={reason.value} value={reason.value}>
                 {reason.label}
@@ -244,6 +361,7 @@ export function AdjustStockDialog({
           </SelectInput>
         </Field>
 
+        {/* Optional Notes */}
         <Field label="Notes (Optional)" htmlFor="adjust-notes">
           <TextareaInput
             id="adjust-notes"

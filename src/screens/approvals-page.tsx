@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Filter, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { BranchSelector } from "@/layout/branch-selector";
 import { TopbarAction } from "@/layout/app-topbar";
+import { FilterMenu } from "@/components/common/filter-menu";
 import { FormDialog } from "@/components/common/form-dialog";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
@@ -12,6 +13,7 @@ import { AddProductDialog } from "@/features/inventory/components/add-product/ad
 import "@/features/approvals/approvals.css";
 
 type Status = "Pending" | "Approved" | "Rejected";
+type StatusFilter = Status | "All statuses";
 type Request = { key: number; id: string; type: string; details: string; location: string; status: Status };
 const initialRequests: Request[] = [
   { key: 1, id: "P-00124", type: "Inventory Adjustment", details: "Reduce Rice 25kg Local stock by 5 bags due to damage.", location: "Main Warehouse", status: "Pending" },
@@ -20,13 +22,15 @@ const initialRequests: Request[] = [
   ...[5, 6, 7, 8, 9].map(key => ({ key, id: "REC-00128", type: "Receipt Cancellation", details: "Products refunded", location: "Lekki Branch", status: (key === 9 ? "Rejected" : "Approved") as Status })),
 ];
 
+// "All statuses" is the default: the Filter menu leaves it out of the list and offers "Clear filter".
+const STATUS_FILTERS: readonly StatusFilter[] = ["All statuses", "Pending", "Approved", "Rejected"];
+
 export default function ApprovalsPage() {
   const [addProductOpen, setAddProductOpen] = useState(false);
   const [summary, setSummary] = useState({ Pending: 5, Approved: 3, Rejected: 1 });
   const [requests, setRequests] = useState(initialRequests);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("All statuses");
-  const [showFilters, setShowFilters] = useState(false);
+  const [status, setStatus] = useState<StatusFilter>("All statuses");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Request | null>(null);
   const filtered = requests.filter(request => (status === "All statuses" || request.status === status) && `${request.id} ${request.type} ${request.details} Chidi Okafor ${request.location}`.toLowerCase().includes(search.toLowerCase()));
@@ -49,11 +53,17 @@ export default function ApprovalsPage() {
         {[[summary.Pending, "Pending Awaiting a decision"], [summary.Approved, "Approved Last 30 days"], [summary.Rejected, "Rejected Last 30 days"]].map(([value, label]) => <div key={label} className="rounded-lg bg-surface p-5"><p className="text-2xl font-semibold tabular-nums">{value}</p><p className="mt-2 text-xs tracking-[0.18px]">{label}</p></div>)}
       </section>
       <section className="min-w-0 rounded-xl bg-surface p-5">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <label className="flex h-[42px] w-full items-center gap-3 rounded-lg border border-border px-4 sm:max-w-[633px]"><Search className="size-5 shrink-0 text-ink-4" /><input aria-label="Search approval requests" placeholder="Search by request ID, product, customer, supplier or requester....." value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-ink-4" /></label>
-          <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(!showFilters)} className="flex h-8 items-center justify-center gap-2 self-start rounded-lg border border-border px-3 text-sm font-semibold text-primary sm:self-auto"><Filter className="size-4" />Filter<ChevronDown className="size-4" /></button>
+          <div className="self-start sm:self-auto">
+            <FilterMenu
+              value={status}
+              options={STATUS_FILTERS}
+              onChange={next => { setStatus(next); setPage(1); }}
+              defaultValue="All statuses"
+            />
+          </div>
         </div>
-        {showFilters && <label className="mb-5 flex flex-wrap items-center gap-3 text-sm">Status<select value={status} onChange={event => { setStatus(event.target.value); setPage(1); }} className="rounded-lg border bg-surface p-2">{["All statuses", "Pending", "Approved", "Rejected"].map(value => <option key={value}>{value}</option>)}</select></label>}
         <Table className="min-w-[1060px] table-fixed">
           <TableHeader><TableRow>{[["Request ID", "9%"], ["Request Type", "17%"], ["Request Details", "20%"], ["Requested By", "11%"], ["Location", "13%"], ["Date Requested", "13%"], ["Status", "10%"], ["Actions", "7%"]].map(([label, width]) => <TableHead key={label} style={{ width }}>{label}</TableHead>)}</TableRow></TableHeader>
           <TableBody>{visible.map(request => <TableRow key={request.key}>

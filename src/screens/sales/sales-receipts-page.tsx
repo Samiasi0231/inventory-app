@@ -4,12 +4,10 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BanknoteIcon,
-  ChevronDownIcon,
   ChartNoAxesCombinedIcon,
   DownloadIcon,
   EyeIcon,
   HandCoinsIcon,
-  ListFilterIcon,
   MoreHorizontalIcon,
   PiggyBankIcon,
   PlusIcon,
@@ -22,8 +20,11 @@ import { EmptyState } from "@/components/common/empty-state";
 import { FormDialog } from "@/components/common/form-dialog";
 import { StatCard, StatCardSkeleton } from "@/components/common/stat-card";
 import { Pagination } from "@/components/ui/pagination";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  FilterMenu,
+} from "@/components/common/filter-menu";
+
+import { SalesOrderIcon } from "@/features/sales/components/sales-order-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -71,7 +72,6 @@ export default function SalesReceiptsPage() {
   const debouncedSearch = useDebouncedValue(search, 350);
   const [page, setPage] = useState(1);
   const [method, setMethod] = useState<Receipt["method"] | "all">("all");
-  const [filterOpen, setFilterOpen] = useState(false);
 
   const [activeReceipt, setActiveReceipt] = useState<Receipt | null>(null);
   const [dialog, setDialog] = useState<"details" | "receipt" | null>(null);
@@ -193,21 +193,25 @@ export default function SalesReceiptsPage() {
             className="min-w-0 flex-1 bg-transparent text-base text-ink-1 outline-none placeholder:text-ink-4"
           />
         </div>
-        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-          <PopoverTrigger className="flex h-8 w-fit items-center gap-2 rounded-lg border border-border bg-white px-3 text-sm font-semibold text-primary">
-            <ListFilterIcon className="size-4" /> Filter <ChevronDownIcon className="size-4" />
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-64 p-4">
-            <label className="mb-2 block text-xs font-medium text-ink-2">Payment method</label>
-            <Select value={method} onValueChange={(value) => { setMethod(value as Receipt["method"] | "all"); setPage(1); }}>
-              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All methods</SelectItem>
-                {PAYMENT_METHODS.filter((entry) => entry.value !== "credit").map((entry) => <SelectItem key={entry.value} value={entry.value}>{entry.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </PopoverContent>
-        </Popover>
+      <FilterMenu
+  label="Filter"
+  icon={<SalesOrderIcon name="filter" className="size-4" />}
+  align="right"
+  className="cursor-pointer"
+  value={method}
+  defaultValue="all"
+  defaultLabel="All methods"
+  options={PAYMENT_METHODS.filter(
+    (entry) => entry.value !== "credit",
+  ).map((entry) => ({
+    value: entry.value,
+    label: entry.label,
+  }))}
+  onChange={(value) => {
+    setMethod(value as Receipt["method"] | "all");
+    setPage(1);
+  }}
+/>
         </div>
 
         {error ? (

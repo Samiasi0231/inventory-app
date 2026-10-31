@@ -1,9 +1,15 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
-import { Filter } from "lucide-react";
-import { Panel} from "@/components/common/panel";
-import { FilterDropdown } from "@/components/common/filter-dropdwon";
+import { TopbarAction } from "@/layout/app-topbar";
+
+import {
+  StaffInviteModal,
+  type StaffInviteFormValues,
+} from "@/components/staff/staff-invite-modal";
+import { Panel } from "@/components/common/panel";
+import { FilterMenu } from "@/components/common/filter-menu";
 import { ListPageHeader } from "@/components/common/list-page-header";
 import { ListToolbar } from "@/components/common/list-toolbar";
 import { EditStaffModal } from "@/components/staff/edit-staff-modal";
@@ -22,13 +28,15 @@ import {
   type StaffStatusFilter,
 } from "@/types/staff";
 
-
 interface StaffPageProps {
   title: string;
   description: string;
 }
 
-export default function StaffPage({ title, description }: StaffPageProps) {
+export default function StaffPage({
+  title,
+  description,
+}: StaffPageProps) {
   const {
     staff,
     updateStaff,
@@ -40,32 +48,61 @@ export default function StaffPage({ title, description }: StaffPageProps) {
 
   const [branch, setBranch] = useState<Branch>("Port Harcourt");
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StaffStatusFilter>("All");
+  const [statusFilter, setStatusFilter] =
+    useState<StaffStatusFilter>("All");
   const [roleFilter, setRoleFilter] = useState("All roles");
   const [modal, setModal] = useState<StaffModalState>(null);
+  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
 
   const roleOptions = useMemo(
-    () => ["All roles", ...Array.from(new Set(staff.map((s) => s.role)))],
+    () => [
+      "All roles",
+      ...Array.from(new Set(staff.map((member) => member.role))),
+    ],
     [staff],
   );
 
+  const handleInviteStaff = async (data: StaffInviteFormValues) => {
+    console.log("Staff invitation details:", data);
+  };
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return staff.filter((s) => {
-      if (s.branch !== branch) return false;
-      if (statusFilter !== "All" && s.status !== statusFilter.toLowerCase())
-        return false;
-      if (roleFilter !== "All roles" && s.role !== roleFilter) return false;
-      if (!q) return true;
-      return [s.name, s.email, s.role].some((v) => v.toLowerCase().includes(q));
+
+    return staff.filter((member) => {
+      const matchesBranch = member.branch === branch;
+
+      const matchesStatus =
+        statusFilter === "All" ||
+        member.status.toLowerCase() === statusFilter.toLowerCase();
+
+      const matchesRole =
+        roleFilter === "All roles" || member.role === roleFilter;
+
+      const matchesSearch =
+        !q ||
+        [member.name, member.email, member.role].some((value) =>
+          value.toLowerCase().includes(q),
+        );
+
+      return (
+        matchesBranch &&
+        matchesStatus &&
+        matchesRole &&
+        matchesSearch
+      );
     });
   }, [staff, branch, statusFilter, roleFilter, query]);
 
-  const handleAction = (action: StaffAction, member: StaffMember) => {
+  const handleAction = (
+    action: StaffAction,
+    member: StaffMember,
+  ) => {
     if (action === "restore") {
       void restoreStaff(member.id);
       return;
     }
+
     setModal({ type: action, staff: member });
   };
 
@@ -86,9 +123,20 @@ export default function StaffPage({ title, description }: StaffPageProps) {
 
   return (
     <div className="min-w-0 space-y-6">
+      <TopbarAction>
+        <button
+          type="button"
+          onClick={() => setIsAddStaffOpen(true)}
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:opacity-90"
+        >
+          <span className="text-lg leading-none">+</span>
+          Invite Staff
+        </button>
+      </TopbarAction>
+
       <ListPageHeader
-        title="Staff"
-        description="Manage employees, roles and access."
+        title={title}
+        description={description}
         branch={branch}
         branches={BRANCHES}
         onBranchChange={setBranch}
@@ -101,37 +149,59 @@ export default function StaffPage({ title, description }: StaffPageProps) {
           onSearchChange={setQuery}
           placeholder="Search staff"
         >
-          <FilterDropdown
-            value={statusFilter}
-            options={STAFF_STATUS_FILTERS}
-            onChange={setStatusFilter}
-          />
-          <FilterDropdown
-            value={roleFilter}
-            options={roleOptions}
-            onChange={setRoleFilter}
-            icon={<Filter size={13} />}
-            label={roleFilter === "All roles" ? "Filter" : roleFilter}
+          <FilterMenu
+            label="Filter"
+            groups={[
+              {
+                id: "status",
+                label: "Status",
+                value: statusFilter,
+                options: STAFF_STATUS_FILTERS,
+                defaultValue: "All",
+                defaultLabel: "All statuses",
+                onChange: (value) =>
+                  setStatusFilter(value as StaffStatusFilter),
+              },
+              {
+                id: "role",
+                label: "Role",
+                value: roleFilter,
+                options: roleOptions,
+                defaultValue: "All roles",
+                defaultLabel: "All roles",
+                onChange: setRoleFilter,
+              },
+            ]}
           />
         </ListToolbar>
+
         <StaffTable staff={visible} onAction={handleAction} />
       </Panel>
+
+      <StaffInviteModal
+        open={isAddStaffOpen}
+        onClose={() => setIsAddStaffOpen(false)}
+        onSubmit={handleInviteStaff}
+      />
 
       <EditStaffModal
         staff={modal?.type === "edit" ? modal.staff : null}
         onClose={closeModal}
         onSubmit={updateStaff}
       />
+
       <SuspendAccessModal
         staff={modal?.type === "suspend" ? modal.staff : null}
         onClose={closeModal}
         onConfirm={suspendStaff}
       />
+
       <RemoveStaffModal
         staff={modal?.type === "remove" ? modal.staff : null}
         onClose={closeModal}
         onConfirm={removeStaff}
       />
+
       <ResendInvitationModal
         staff={modal?.type === "resend" ? modal.staff : null}
         onClose={closeModal}

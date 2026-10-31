@@ -30,7 +30,7 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
       disabled={soldOut}
       onClick={() => onSelect(product)}
       className={cn(
-        "flex h-[145px] flex-col items-start gap-2 rounded-xl border border-[#ededed] bg-white p-4 text-left shadow-[0_1px_3px_rgba(47,47,47,0.12)] transition-[border-color,background-color,transform,box-shadow]",
+        "flex h-[145px] flex-col items-start gap-2 rounded-xl border border-border/70 bg-white p-4 text-left shadow-[0_1px_3px_rgba(47,47,47,0.12)] transition-[border-color,background-color,transform,box-shadow]",
         "focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/20 focus-visible:outline-none",
         soldOut ? "cursor-not-allowed opacity-55" : "hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-[0_5px_14px_rgba(0,140,75,0.09)] active:translate-y-0",
       )}

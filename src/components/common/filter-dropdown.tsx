@@ -7,7 +7,6 @@ interface Props<T extends string> {
   value: T;
   options: readonly T[];
   onChange: (v: T) => void;
-  /** Shown instead of the current value (e.g. "Filter") */
   label?: ReactNode;
   icon?: ReactNode;
   className?: string;

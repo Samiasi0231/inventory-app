@@ -78,6 +78,10 @@ export function CartPanel({
     paymentMethod === "card" ? "POS" : paymentMethod === "transfer" ? "Bank Transfer" : "Cash";
 
   return (
+    <aside className="flex h-fit min-w-0 flex-col gap-4 rounded-xl bg-surface p-5 xl:min-h-[546px] xl:sticky xl:top-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg leading-6 font-semibold text-ink-1">
+          Cart{lines.length > 0 && <span className="ml-1 text-xs font-normal text-ink-3">· {itemCount} items</span>}
     <aside className="flex h-fit min-w-0 flex-col gap-0 rounded-xl bg-surface p-5 xl:min-h-[780px] xl:sticky xl:top-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg leading-6 font-semibold text-ink-1">
@@ -87,7 +91,7 @@ export function CartPanel({
           type="button"
           onClick={onClear}
           aria-label="Clear cart"
-          className="sr-only focus:not-sr-only rounded-full p-0 text-ink-3 transition-colors hover:bg-surface-muted hover:text-ink-1 disabled:pointer-events-none disabled:opacity-40"
+          className="rounded-full p-0 text-ink-3 transition-colors hover:bg-surface-muted hover:text-ink-1 disabled:pointer-events-none disabled:opacity-40"
         >
           <XIcon className="size-[26px] stroke-[1.75]" />
         </button>

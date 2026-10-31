@@ -83,7 +83,7 @@ export default function ApprovalRulesPage() {
             <Link
               key={rule.id}
               href={`/settings/approval-rules/${rule.id}`}
-              className="group flex flex-col gap-4 rounded-xl bg-surface p-5 transition-colors hover:bg-surface-muted/40"
+              className="group flex flex-col gap-4 rounded-xl bg-surface p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">

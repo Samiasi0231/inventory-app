@@ -2,7 +2,7 @@
 
 import { Download } from "lucide-react";
 import { Panel } from "./panel";
-import { FilterDropdown } from "./filter-dropdwon";
+import { FilterDropdown } from "./filter-dropdown";
 
 interface Props<T extends string> {
   title: string;
