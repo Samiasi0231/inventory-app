@@ -6,7 +6,8 @@ import { ArrowRight, BadgeCheck } from "lucide-react";
 import { PrimaryButton } from "@/components/button";
 import { SummaryCard, type SummaryItem } from "@/components/onboarding";
 import { useOnboarding } from "@/context/onboarding-context";
-import { businessTypes } from "@/features/onboarding/bussiness-types";
+import { useBusinessTypes } from "@/lib/api/index";
+import { useAuthGuard } from "@/hooks/use-auth-guard";
 
 /** "F.C.T (Abuja)" + "Nigeria" → "F.C.T Nigeria" (matches the design). */
 function formatLocation(city: string, country: string) {
@@ -17,6 +18,11 @@ function formatLocation(city: string, country: string) {
 export default function OnboardingCompletePage() {
   const router = useRouter();
   const { businessType, businessProfile, fullName } = useOnboarding();
+  const { data: types } = useBusinessTypes("onboarding"); // already cached from the first step
+
+  // Just needs a logged-in user. NOT "onboarding": the details form has already marked the user
+  // as finished, so that mode would bounce them to the dashboard before they see this screen.
+  useAuthGuard("any");
 
   // The summary needs the saved profile — send people back if it's missing.
   useEffect(() => {
@@ -25,9 +31,10 @@ export default function OnboardingCompletePage() {
 
   if (!businessProfile) return null;
 
-  const typeTitle = businessTypes.find((t) => t.id === businessType)?.title ?? "";
-  const typeName = typeTitle.replace(/\s*\/\s*/g, "/"); // "Retail /Shopping" → "Retail/Shopping"
-  const typeSentence = typeName.replace("/", " / "); // → "Retail / Shopping"
+  // businessType is the backend code, e.g. "restaurant_food" -> "Restaurant / Food"
+  const typeTitle = types?.find((t) => t.code === businessType)?.name ?? "";
+  const typeName = typeTitle.replace(/\s*\/\s*/g, "/");
+  const typeSentence = typeName.replace("/", " / ");
 
   const items: SummaryItem[] = [
     { label: "Business Type", value: typeName },
@@ -38,13 +45,13 @@ export default function OnboardingCompletePage() {
 
   return (
     <div className="mx-auto w-full max-w-[560px]">
-      {/* Tight card padding: the mint summary box sits close to the card edges */}
       <section className="rounded-2xl border border-neutral-200/70 bg-white p-2 shadow-sm">
         <div className="px-4 pb-6 pt-6 text-center sm:px-6">
           <BadgeCheck className="mx-auto size-9 text-brand-500" strokeWidth={1.75} aria-hidden />
           <h1 className="mt-3 text-2xl font-bold text-neutral-900">You&apos;re all Set!</h1>
           <p className="mx-auto mt-2 max-w-sm text-sm text-neutral-700">
-            Welcome to RIINOX, {businessProfile.businessName}. Your {typeSentence} workspace is ready for launch.
+            Welcome to RIINOX, {businessProfile.businessName}. Your{" "}
+            {typeSentence ? `${typeSentence} workspace` : "workspace"} is ready for launch.
           </p>
         </div>
         <SummaryCard items={items} />
