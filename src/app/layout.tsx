@@ -3,6 +3,7 @@ import "@fontsource-variable/karla";
 import "./globals.css";
 import { OnboardingProvider } from "@/context/onboarding-context";
 import { ToastProvider, Toaster } from "@/components/ui/toast";
+import { QueryProvider } from "@/providers/providers";
 
 export const metadata: Metadata = {
   title: "Riinox",
@@ -16,7 +17,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <ToastProvider>
+          <QueryProvider>
           <OnboardingProvider>{children}</OnboardingProvider>
+          </QueryProvider>
         </ToastProvider>
       </body>
     </html>

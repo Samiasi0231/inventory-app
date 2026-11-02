@@ -105,4 +105,4 @@ export const currencies = [
   { code: "CAD", label: "CAD — Canadian Dollar" },
 ];
 
-export const staffRanges = ["0-10", "11-20", "21-50", "51-100", "100 and above"];
+export const staffRanges = ["1-5", "6-10", "11-50", "50+"]

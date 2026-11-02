@@ -8,15 +8,25 @@ import { PrimaryButton } from "@/components/button";
 import { FormAlert, GoogleButton, OrDivider } from "@/components/auth";
 import { PasswordField, TextField } from "@/components/form";
 import { useOnboarding } from "@/context/onboarding-context";
-import { authApi } from "@/lib/api";
+import { authApi } from "@/lib/api"; 
+import {
+  ApiError,
+  getErrorMessage,
+  pendingCredentials,
+  useLogin,
+  useResendActivation,
+} from "@/lib/api/index";
 import { signInSchema, type SignInValues } from "./auth.schema";
- 
+
 export function SignInForm() {
   const router = useRouter();
   const { setEmail } = useOnboarding();
   const [serverError, setServerError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
- 
+
+  const signIn = useLogin(); // POST /api/auth/jwt/login/
+  const resend = useResendActivation(); // POST /api/users/resend_activation/
+
   const {
     register,
     handleSubmit,
@@ -26,24 +36,42 @@ export function SignInForm() {
     resolver: zodResolver(signInSchema),
     defaultValues: { email: "", password: "" },
   });
- 
+
   const onSubmit = async (values: SignInValues) => {
     setServerError(null);
     try {
-      const { email } = await authApi.signIn(values);
-      setEmail(email);
-      
-      router.push("/dashboard");
-    } catch {
-      setError("password", { type: "server", message: "Wrong password" });
+      const res = await signIn.mutateAsync(values);
+      setEmail(res.setup_info.email);
+      router.push(res.registration_complete ? "/dashboard" : "/onboarding/business-type");
+    } catch (error) {
+      // [NEW] right password, but the email was never verified:
+      // send a fresh code and continue on the verify page.
+      if (error instanceof ApiError && error.isEmailNotVerified) {
+        // memory only: lets the verify step log them in automatically afterwards
+        pendingCredentials.set({ email: values.email, password: values.password });
+        setEmail(values.email);
+        try {
+          await resend.mutateAsync({ email: values.email });
+        } catch {
+          // e.g. a code was just sent (rate limit). Still continue: the verify page has its own Resend.
+        }
+        router.push(`/verify?email=${encodeURIComponent(values.email)}`);
+        return;
+      }
+
+      if (error instanceof ApiError && error.status === 401) {
+        setError("password", { type: "server", message: "Wrong password" });
+      } else {
+        setServerError(getErrorMessage(error));
+      }
     }
   };
- 
+
   const onGoogle = async () => {
     setGoogleLoading(true);
     setServerError(null);
     try {
-      const { email } = await authApi.signUpWithGoogle();
+      const { email } = await authApi.signUpWithGoogle(); // no backend endpoint yet
       setEmail(email);
       router.push("/welcome-back");
     } catch {
@@ -52,7 +80,7 @@ export function SignInForm() {
       setGoogleLoading(false);
     }
   };
- 
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
       <TextField
@@ -64,7 +92,7 @@ export function SignInForm() {
         error={errors.email?.message}
         {...register("email")}
       />
- 
+
       <PasswordField
         id="password"
         label="Password"
@@ -80,16 +108,16 @@ export function SignInForm() {
         }
         {...register("password")}
       />
- 
+
       <FormAlert message={serverError} />
- 
-      <PrimaryButton type="submit" fullWidth loading={isSubmitting} 
+
+      <PrimaryButton type="submit" fullWidth loading={isSubmitting}
       className="mt-2">
         Sign In
       </PrimaryButton>
- 
+
       <OrDivider />
- 
+
       <GoogleButton onClick={onGoogle} loading={googleLoading} />
     </form>
   );

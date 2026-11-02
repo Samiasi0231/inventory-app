@@ -1,15 +1,21 @@
+"use client";
+
 import { useCallback, useEffect, useState } from "react";
- 
-export function useCountdown(initial = 0) {
-  const [seconds, setSeconds] = useState(initial);
- 
+
+/** Resend-code cooldown: `start()` begins the countdown, `isRunning` disables the button. */
+export function useCountdown(defaultSeconds = 60) {
+  const [secondsLeft, setSecondsLeft] = useState(0);
+
   useEffect(() => {
-    if (seconds <= 0) return;
-    const id = window.setTimeout(() => setSeconds((s) => s - 1), 1000);
+    if (secondsLeft <= 0) return;
+    const id = window.setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
     return () => window.clearTimeout(id);
-  }, [seconds]);
- 
-  const start = useCallback((value: number) => setSeconds(value), []);
- 
-  return { seconds, start };
+  }, [secondsLeft]);
+
+  const start = useCallback(
+    (seconds: number = defaultSeconds) => setSecondsLeft(seconds),
+    [defaultSeconds],
+  );
+
+  return { secondsLeft, isRunning: secondsLeft > 0, start };
 }
