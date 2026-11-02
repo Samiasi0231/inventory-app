@@ -1,0 +1,24 @@
+export interface PaginatedResponse<T> {
+  count: number;
+  total_pages: number;
+  current_page: number;
+  page_size: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface PaginationParams {
+  page?: number;
+  page_size?: number;
+}
+
+export type QueryParams = Record<string, unknown>;
+
+export interface ApiErrorShape {
+  message: string;
+  status: number | null;
+  code?: string;
+  fieldErrors: Record<string, string[]>;
+  details?: unknown;
+}
