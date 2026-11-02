@@ -11,7 +11,7 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const { resetToken } = useOnboarding();
  
-  // A verified code is required to land here.
+  // // A verified code is required to land here.
   useEffect(() => {
     if (!resetToken) router.replace("/forgot-password");
   }, [resetToken, router]);

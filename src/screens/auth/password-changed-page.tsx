@@ -1,5 +1,4 @@
 "use client";
-
 import { useRouter } from "next/navigation";
 import { ArrowRight, Gem } from "lucide-react";
 import { PrimaryButton } from "@/components/button";
