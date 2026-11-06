@@ -2,6 +2,7 @@ import { authEndpoints } from "./modules/auth/endpoints";
 import { businessTypesEndpoints } from "./modules/bussiness-types/endpoints";
 import { usersEndpoints } from "./modules/users/endpoints";
 import { organizationsEndpoints } from "./modules/organizations/endpoints";
+import { customersEndpoints } from "./modules/customers/endpoints";
 /**
  * One-glance view of every backend path. Each module owns its own paths;
  * this only collects them.
@@ -15,4 +16,5 @@ export const ENDPOINTS = {
   users: usersEndpoints,
   businessTypes: businessTypesEndpoints,
   organizations: organizationsEndpoints,
+  customers: customersEndpoints,
 } as const;

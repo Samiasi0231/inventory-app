@@ -4,28 +4,56 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { CustomerFormModal } from "@/components/customers/customer-form-modal";
+import { AdjustCreditModal } from "@/components/customers/adjust-credit-modal";
 import { ArchiveEntityModal } from "@/components/common/archive-entity-modal";
 import { ContactInfoCard } from "@/components/common/contact-info-card";
 import { EntityHeaderCard } from "@/components/common/entity-header-card";
 import { InvoiceHistoryCard } from "@/components/common/invoice-history-card";
 import { StatCard } from "@/components/ui/statcard";
-import { useCustomers } from "@/hooks/use-customer";
+import {
+  useCustomers,
+  useCustomerDetail,
+  useCustomerSalesHistory,
+} from "@/hooks/use-customer";
 import { formatMonthYear, formatNaira } from "@/lib/format";
+import { CreditCard } from "lucide-react";
+import { SecondaryButton } from "@/components/button";
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { getCustomer, updateCustomer, archiveCustomer } = useCustomers();
+
+  // Primary live fetch for this customer
+  const {
+    customer: liveCustomer,
+    isLoading: isCustomerLoading,
+    isError: isCustomerError,
+  } = useCustomerDetail(id);
+
+  // Live sales history from the backend
+  const {
+    sales,
+    isLoading: _isSalesLoading,
+  } = useCustomerSalesHistory(id);
+
+  const { updateCustomer, archiveCustomer, adjustCredit } = useCustomers();
 
   const [editing, setEditing] = useState(false);
+  const [adjustingCredit, setAdjustingCredit] = useState(false);
   const [archiving, setArchiving] = useState(false);
 
-  const customer = getCustomer(id);
+  if (isCustomerLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center p-6 text-sm text-gray-500">
+        Loading customer details...
+      </div>
+    );
+  }
 
-  if (!customer || customer.archived) {
+  if (isCustomerError || !liveCustomer || liveCustomer.archived) {
     return (
       <div className="p-6 text-sm text-gray-600">
-        Customer not found.{" "}
+        Customer not found or has been deactivated.{" "}
         <Link
           href="/people/customers"
           className="font-medium text-emerald-700 hover:underline"
@@ -38,13 +66,26 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      <EntityHeaderCard
-        name={customer.name}
-        meta={`${customer.type} • ${customer.code}`}
-        since={`Customer since ${formatMonthYear(customer.since)}`}
-        onArchive={() => setArchiving(true)}
-        onEdit={() => setEditing(true)}
-      />
+      <div className="relative">
+        <EntityHeaderCard
+          name={liveCustomer.name}
+          meta={`${liveCustomer.type} • ${liveCustomer.code}`}
+          since={`Customer since ${formatMonthYear(liveCustomer.since)}`}
+          onArchive={() => setArchiving(true)}
+          onEdit={() => setEditing(true)}
+        />
+        <div className="mt-3 flex justify-end gap-2">
+          <SecondaryButton
+            type="button"
+            onClick={() => setAdjustingCredit(true)}
+          >
+            <span className="flex items-center gap-1.5 text-xs">
+              <CreditCard size={14} />
+              Adjust Credit Policy
+            </span>
+          </SecondaryButton>
+        </div>
+      </div>
 
       <div>
         <span className="inline-block rounded-md bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
@@ -55,51 +96,76 @@ export default function CustomerDetailPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total Sales"
-          value={formatNaira(customer.totalSales)}
+          value={formatNaira(liveCustomer.totalSales)}
         />
         <StatCard
           label="Amount Paid"
-          value={formatNaira(customer.totalSales - customer.outstanding)}
+          value={formatNaira(
+            Math.max(0, liveCustomer.totalSales - liveCustomer.outstanding),
+          )}
         />
         <StatCard
           label="Outstanding"
-          value={formatNaira(customer.outstanding)}
+          value={formatNaira(liveCustomer.outstanding)}
         />
         <StatCard
           label="Credit Limit"
           value={
-            customer.creditLimit === null
+            liveCustomer.creditLimit === null
               ? "No Limit"
-              : formatNaira(customer.creditLimit)
+              : formatNaira(liveCustomer.creditLimit)
           }
         />
       </div>
 
       <ContactInfoCard
         rows={[
-          { label: "Contact Person", value: customer.contactPerson },
-          { label: "Email", value: customer.email },
-          { label: "Phone Number", value: customer.phone },
-          { label: "Address", value: customer.address },
+          {
+            label: "Contact Person / Company",
+            value: liveCustomer.contactPerson || "--",
+          },
+          { label: "Email", value: liveCustomer.email || "--" },
+          { label: "Phone Number", value: liveCustomer.phone || "--" },
+          { label: "Address", value: liveCustomer.address || "--" },
+          {
+            label: "Payment Terms",
+            value: liveCustomer.paymentTermsDays
+              ? `${liveCustomer.paymentTermsDays} days`
+              : "Net 0 (Immediate)",
+          },
         ]}
       />
 
-      {/* TODO: route to the invoice/transaction page once it exists */}
+      {/* Real Sales History from backend */}
       <InvoiceHistoryCard
         title="Sales History"
-        records={customer.sales}
+        records={sales}
         onView={() => {}}
       />
 
       <CustomerFormModal
         open={editing}
-        customer={customer}
+        customer={liveCustomer}
         onClose={() => setEditing(false)}
-        onSubmit={(input) => updateCustomer(customer.id, input)}
+        onSubmit={async (input) => {
+          await updateCustomer(liveCustomer.id, input);
+          setEditing(false);
+        }}
       />
+
+      <AdjustCreditModal
+        open={adjustingCredit}
+        customer={liveCustomer}
+        onClose={() => setAdjustingCredit(false)}
+        onSubmit={async (input) => {
+          await adjustCredit(liveCustomer.id, input);
+          setAdjustingCredit(false);
+        }}
+      />
+
       <ArchiveEntityModal
         entityLabel="Customer"
-        entity={archiving ? customer : null}
+        entity={archiving ? liveCustomer : null}
         onClose={() => setArchiving(false)}
         onConfirm={async (cid) => {
           await archiveCustomer(cid);
