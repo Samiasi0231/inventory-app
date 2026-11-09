@@ -14,6 +14,7 @@ export interface Customer {
   address: string;
   /** null = no credit limit */
   creditLimit: number | null;
+  paymentTermsDays?: number;
   notes: string;
   branch: string;
   totalSales: number;
@@ -35,7 +36,14 @@ export interface CustomerInput {
   notes: string;
 }
 
+export interface AdjustCreditInput {
+  creditLimit: number;
+  paymentTermsDays?: number;
+  reason?: string;
+}
+
 export type CustomerModalState =
   | { type: "edit"; customer: Customer }
   | { type: "archive"; customer: Customer }
+  | { type: "adjust-credit"; customer: Customer }
   | null;

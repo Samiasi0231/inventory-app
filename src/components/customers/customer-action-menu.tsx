@@ -1,10 +1,10 @@
 "use client";
 
-import { Archive, Eye, Pencil } from "lucide-react";
+import { Archive, CreditCard, Eye, Pencil } from "lucide-react";
 import { RowActionsMenu } from "@/components/common/row-action-menu";
 import type { Customer } from "@/types/customer";
 
-export type CustomerAction = "view" | "edit" | "archive";
+export type CustomerAction = "view" | "edit" | "archive" | "adjust-credit";
 
 interface Props {
   customer: Customer;
@@ -29,8 +29,14 @@ export function CustomerActionsMenu({ customer, onAction }: Props) {
           onSelect: () => onAction("edit", customer),
         },
         {
+          key: "adjust-credit",
+          label: "Adjust Credit",
+          icon: <CreditCard size={13} />,
+          onSelect: () => onAction("adjust-credit", customer),
+        },
+        {
           key: "archive",
-          label: "Archive Customer",
+          label: "Archive / Deactivate",
           icon: <Archive size={13} />,
           onSelect: () => onAction("archive", customer),
         },

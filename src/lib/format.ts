@@ -36,15 +36,36 @@ export function formatPercentDelta(value: number) {
 export const formatNaira = (n: number) =>
   `₦${n.toLocaleString("en-NG")}`;
 
-export const formatDate = (iso: string) =>
-  new Intl.DateTimeFormat("en-NG", {
+/** Safely converts an ISO date string into a Date object. */
+function parseDate(iso: string | null | undefined): Date | null {
+  if (!iso) return null;
+
+  const date = new Date(iso);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date;
+}
+
+/** "06 Nov 2026" */
+export const formatDate = (iso: string | null | undefined) => {
+  const date = parseDate(iso);
+  if (!date) return "--";
+
+  return new Intl.DateTimeFormat("en-NG", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(iso));
+  }).format(date);
+};
 
-export const formatMonthYear = (iso: string) =>
-  new Intl.DateTimeFormat("en-NG", {
+/** "November 2026" */
+export const formatMonthYear = (iso: string | null | undefined) => {
+  const date = parseDate(iso);
+  if (!date) return "--";
+
+  return new Intl.DateTimeFormat("en-NG", {
     month: "long",
     year: "numeric",
-  }).format(new Date(iso));
+  }).format(date);
+};
